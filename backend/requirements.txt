@@ -1,0 +1,23 @@
+# Core Web Framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+python-multipart>=0.0.12
+
+# Database & Migrations
+sqlalchemy>=2.0.35
+alembic>=1.13.3
+psycopg[binary]>=3.2.0
+pgvector>=0.3.5
+
+# Security & Auth (Phase 2)
+argon2-cffi>=23.1.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1
+pyjwt>=2.9.0
+email-validator>=2.2.0
+
+# Testing & HTTP Client
+pytest>=8.3.0
+httpx>=0.27.2
