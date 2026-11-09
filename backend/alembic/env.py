@@ -16,7 +16,7 @@ if target_db_url.startswith("postgresql") and settings.ALLOW_SQLITE_DEV_FALLBACK
     from app.database import ACTIVE_DATABASE_URI
     target_db_url = ACTIVE_DATABASE_URI
 
-config.set_main_option("sqlalchemy.url", target_db_url)
+config.set_main_option("sqlalchemy.url", target_db_url.replace("%", "%%"))
 
 target_metadata = Base.metadata
 

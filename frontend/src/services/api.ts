@@ -1,4 +1,4 @@
-import {
+﻿import {
   AuthTokenResponse,
   CurrentUser,
   HealthStatus,
@@ -50,7 +50,7 @@ export function setStoredOrganisationId(orgId: string | null): void {
   }
 }
 
-async function apiRequest<T>(
+export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
   activeOrgId?: string | null,

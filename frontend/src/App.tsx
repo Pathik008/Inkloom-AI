@@ -9,6 +9,8 @@ import { RegisterPage } from './pages/RegisterPage';
 import { AcceptInvitationPage } from './pages/AcceptInvitationPage';
 import { OrganisationSettingsPage } from './pages/OrganisationSettingsPage';
 import { PlannedModulePage } from './pages/PlannedModulePage';
+import { BrandRulesPage } from './pages/BrandRulesPage';
+import { ComplianceWorkbenchPage } from './pages/ComplianceWorkbenchPage';
 
 export const App: React.FC = () => {
   return (
@@ -40,18 +42,7 @@ export const App: React.FC = () => {
               path="brand-hub"
               element={
                 <ProtectedRoute requiredPermission="brand:read">
-                  <PlannedModulePage
-                    title="Brand Hub & Versioned Brand Knowledge"
-                    phase="Phase 3"
-                    owner="Riddhi Yadav & Pathik Talwar"
-                    summary="Create and version Brand Kits including Brand Identity, Brand Voice, Approved Brand Facts (prices, specs, offers), Compliance Rules, and Reference Assets."
-                    deliverables={[
-                      'Brand Identity & Typography configuration',
-                      'Structured, versioned Approved Brand Facts (e.g., Premium Coffee = ₹129)',
-                      'Prohibited terms, required disclaimers, and restricted claims rules',
-                      'Immutable Brand Kit publication and version history binding',
-                    ]}
-                  />
+                  <BrandRulesPage />
                 </ProtectedRoute>
               }
             />
@@ -78,18 +69,7 @@ export const App: React.FC = () => {
               path="compliance-review"
               element={
                 <ProtectedRoute requiredPermission="content:review">
-                  <PlannedModulePage
-                    title="Hybrid Deterministic + LangGraph RAG Compliance Engine"
-                    phase="Phase 5 – Phase 7"
-                    owner="Pathik Talwar, Tanmay Mishra & Pragati Kumari"
-                    summary="Combines exact deterministic rule evaluation with pgvector RAG retrieval and LangGraph semantic verification."
-                    deliverables={[
-                      'Deterministic checks for exact prices, prohibited words, and required disclaimers',
-                      '1024-d BAAI/bge-large-en-v1.5 embeddings & tenant-isolated pgvector retrieval',
-                      '11-node LangGraph orchestration with Pydantic v2 output validation',
-                      'Explicit UNVERIFIED fallback when approved evidence is unavailable',
-                    ]}
-                  />
+                  <ComplianceWorkbenchPage />
                 </ProtectedRoute>
               }
             />
