@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
+  AlertTriangle,
   BookOpen,
   CheckCircle2,
   Clock4,
@@ -107,7 +108,7 @@ const STATUS_BADGE: Record<string, { label: string; badge: string }> = {
 };
 
 export const ApprovalsPage: React.FC = () => {
-  const { activeOrganisationId, hasPermission } = useAuth();
+  const { user, activeOrganisationId, hasPermission } = useAuth();
   const canDecide = hasPermission('approval:decide');
 
   const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
@@ -748,7 +749,12 @@ export const ApprovalsPage: React.FC = () => {
             {/* Modal Footer / Review Actions */}
             <div className="border-t border-slate-800 bg-slate-950/80 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
               <div className="text-xs text-slate-400">
-                {canDecide ? (
+                {detail?.submitted_by_user_id === user?.id ? (
+                  <span className="text-amber-400 font-medium flex items-center gap-1.5">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    Independent review required: You submitted this copy.
+                  </span>
+                ) : canDecide ? (
                   <span className="text-emerald-400 font-medium">
                     ✓ Authorised to approve or reject
                   </span>
@@ -764,24 +770,24 @@ export const ApprovalsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmAction('REQUEST_CHANGES')}
-                    disabled={actionBusy}
-                    className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-xs font-semibold text-orange-300 hover:bg-orange-500/20 transition disabled:opacity-50"
+                    disabled={actionBusy || detail?.submitted_by_user_id === user?.id}
+                    className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-xs font-semibold text-orange-300 hover:bg-orange-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Request Changes
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmAction('REJECT')}
-                    disabled={actionBusy}
-                    className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/20 transition disabled:opacity-50"
+                    disabled={actionBusy || detail?.submitted_by_user_id === user?.id}
+                    className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Reject
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmAction('APPROVE')}
-                    disabled={actionBusy}
-                    className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-500 transition disabled:opacity-50"
+                    disabled={actionBusy || detail?.submitted_by_user_id === user?.id}
+                    className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Approve Copy
                   </button>

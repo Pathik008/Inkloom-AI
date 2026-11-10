@@ -446,12 +446,16 @@ export async function submitSubmissionForApproval(
   organisationId: string,
   submissionId: string,
   comments?: string | null,
+  assignedReviewerId?: string | null,
 ): Promise<any> {
+  const payload: Record<string, any> = {};
+  if (comments) payload.comments = comments;
+  if (assignedReviewerId) payload.assigned_reviewer_id = assignedReviewerId;
   return apiRequest<any>(
     `/api/v1/organisations/${organisationId}/compliance/submissions/${submissionId}/submit-for-approval`,
     {
       method: 'POST',
-      body: JSON.stringify(comments ? { comments } : {}),
+      body: JSON.stringify(payload),
     },
     organisationId,
   );

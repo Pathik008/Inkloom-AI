@@ -372,7 +372,7 @@ def submit_for_approval(
 def assign_reviewer(
     submission_id: uuid.UUID,
     payload: AssignReviewerRequest,
-    context: TenantContext = Depends(require_permission(PermissionCode.CONTENT_REVIEW)),
+    context: TenantContext = Depends(require_permission(PermissionCode.APPROVAL_DECIDE)),
     db: Session = Depends(get_db),
 ):
     submission = compliance_service.assign_reviewer(

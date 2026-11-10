@@ -89,6 +89,8 @@ interface Submission {
   title: string;
   content_text: string;
   status: string;
+  submitted_by_user_id: string | null;
+  submitted_by_name: string | null;
   assigned_reviewer_id: string | null;
   assigned_reviewer_name: string | null;
   reviewed_by_user_id: string | null;
@@ -190,7 +192,7 @@ const HighlightedText: React.FC<{ text: string; findings: ComplianceFinding[] }>
 };
 
 export const ComplianceWorkbenchPage: React.FC = () => {
-  const { activeOrganisationId: orgId, hasPermission } = useAuth();
+  const { user, activeOrganisationId: orgId, hasPermission } = useAuth();
   const canSubmit = hasPermission('content:create');
   const canDecide = hasPermission('approval:decide');
   const canReview = hasPermission('content:review');
@@ -847,29 +849,45 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                   value={submitComment}
                   onChange={(e) => setSubmitComment(e.target.value)}
                 />
-                {reviewers.length > 0 && (
-                  <select
-                    className={input}
-                    value={selectedReviewerId}
-                    onChange={(e) => setSelectedReviewerId(e.target.value)}
-                  >
-                    <option value="">Auto-assign or select reviewer...</option>
-                    {reviewers.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.full_name} ({r.role})
-                      </option>
-                    ))}
-                  </select>
-                )}
+                {(() => {
+                  const eligibleReviewers = reviewers.filter((r) => r.id !== user?.id);
+                  return (
+                    <div className="flex flex-col gap-1">
+                      <select
+                        className={input}
+                        value={selectedReviewerId}
+                        onChange={(e) => setSelectedReviewerId(e.target.value)}
+                      >
+                        <option value="">Auto-assign or select reviewer...</option>
+                        {eligibleReviewers.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.full_name} ({r.role})
+                          </option>
+                        ))}
+                      </select>
+                      {eligibleReviewers.length === 0 && (
+                        <span className="text-[11px] text-amber-400">
+                          No other eligible reviewers available. Invite an independent reviewer.
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
               <button
                 disabled={busy}
                 onClick={() =>
                   call(
                     async () => {
-                      const res = await submitSubmissionForApproval(orgId!, current.id, submitComment || null);
+                      const res = await submitSubmissionForApproval(
+                        orgId!,
+                        current.id,
+                        submitComment || null,
+                        selectedReviewerId || null,
+                      );
                       setShowSubmitModal(false);
                       setSubmitComment('');
+                      setSelectedReviewerId('');
                       return res;
                     },
                     'Submitted for human review successfully.',
@@ -886,6 +904,13 @@ export const ComplianceWorkbenchPage: React.FC = () => {
           {/* Reviewer Decision Panel (Requires approval:decide permission) */}
           {canDecide && (
             <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-3">
+              {current.submitted_by_user_id === user?.id && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
+                  <span>Independent review required: You submitted this copy.</span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-emerald-400" />
@@ -893,39 +918,43 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                 </h3>
 
                 {/* Reviewer Assignment selector */}
-                {reviewers.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <select
-                      className={`${input} py-1 text-xs`}
-                      value={selectedReviewerId || current.assigned_reviewer_id || ''}
-                      onChange={(e) => setSelectedReviewerId(e.target.value)}
-                    >
-                      <option value="">Select Reviewer...</option>
-                      {reviewers.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.full_name} ({r.role})
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      id="btn-assign-reviewer"
-                      disabled={busy || !selectedReviewerId}
-                      onClick={() =>
-                        call(
-                          () =>
-                            apiRequest<Submission>(`${base}/compliance/submissions/${current.id}/assign-reviewer`, {
-                              method: 'POST',
-                              body: JSON.stringify({ reviewer_id: selectedReviewerId }),
-                            }),
-                          'Reviewer assigned successfully.',
-                        )
-                      }
-                      className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700 disabled:opacity-50"
-                    >
-                      Assign
-                    </button>
-                  </div>
-                )}
+                {(() => {
+                  const eligibleReviewers = reviewers.filter((r) => r.id !== current.submitted_by_user_id);
+                  if (eligibleReviewers.length === 0) return null;
+                  return (
+                    <div className="flex items-center gap-2">
+                      <select
+                        className={`${input} py-1 text-xs`}
+                        value={selectedReviewerId || current.assigned_reviewer_id || ''}
+                        onChange={(e) => setSelectedReviewerId(e.target.value)}
+                      >
+                        <option value="">Select Reviewer...</option>
+                        {eligibleReviewers.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.full_name} ({r.role})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        id="btn-assign-reviewer"
+                        disabled={busy || !selectedReviewerId}
+                        onClick={() =>
+                          call(
+                            () =>
+                              apiRequest<Submission>(`${base}/compliance/submissions/${current.id}/assign-reviewer`, {
+                                method: 'POST',
+                                body: JSON.stringify({ reviewer_id: selectedReviewerId }),
+                              }),
+                            'Reviewer assigned successfully.',
+                          )
+                        }
+                        className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+                      >
+                        Assign
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
 
               <textarea
@@ -939,7 +968,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   id="btn-approve-content"
-                  disabled={busy}
+                  disabled={busy || current.submitted_by_user_id === user?.id}
                   onClick={() =>
                     call(
                       () =>
@@ -950,7 +979,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                       'Content approved for publication.',
                     )
                   }
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 shadow-md shadow-emerald-600/20 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 shadow-md shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   <span>Approve Content</span>
@@ -958,7 +987,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
                 <button
                   id="btn-request-revisions"
-                  disabled={busy}
+                  disabled={busy || current.submitted_by_user_id === user?.id}
                   onClick={() =>
                     call(
                       () =>
@@ -969,7 +998,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                       'Revisions requested from author.',
                     )
                   }
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-500 shadow-md shadow-amber-600/20 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-500 shadow-md shadow-amber-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <RotateCcw className="h-4 w-4" />
                   <span>Request Revisions</span>
@@ -977,7 +1006,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
                 <button
                   id="btn-reject-content"
-                  disabled={busy}
+                  disabled={busy || current.submitted_by_user_id === user?.id}
                   onClick={() =>
                     call(
                       () =>
@@ -988,7 +1017,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                       'Content rejected.',
                     )
                   }
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 shadow-md shadow-rose-600/20 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 shadow-md shadow-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <XCircle className="h-4 w-4" />
                   <span>Reject Content</span>

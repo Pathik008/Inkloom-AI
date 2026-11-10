@@ -573,7 +573,12 @@ def submit_for_approval(
     comments: str | None = None,
 ) -> ContentSubmission:
     """Submit a draft or revised submission for human approval."""
-    submission = get_submission_or_404(db, organisation_id=organisation_id, submission_id=submission_id)
+    submission = get_submission_or_404(
+        db,
+        organisation_id=organisation_id,
+        submission_id=submission_id,
+        for_update=True,
+    )
 
     if submission.status not in (SubmissionStatus.DRAFT, SubmissionStatus.CHANGES_REQUESTED):
         raise HTTPException(
@@ -583,6 +588,11 @@ def submit_for_approval(
 
     # Validate assigned reviewer if provided
     if assigned_reviewer_id:
+        if assigned_reviewer_id == submission.submitted_by_user_id or assigned_reviewer_id == user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Independent review required: Submitter cannot be assigned as the reviewer.",
+            )
         rev_membership = db.execute(
             select(OrganisationMembership, Role)
             .join(Role, Role.id == OrganisationMembership.role_id)
@@ -658,6 +668,13 @@ def assign_reviewer(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Cannot assign reviewer to submission in '{submission.status}' status.",
+        )
+
+    # SEC: Prevent author from being assigned as their own reviewer
+    if reviewer_id == submission.submitted_by_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Independent review required: Submitter cannot be assigned as the reviewer.",
         )
 
     rev_membership = db.execute(
@@ -741,6 +758,14 @@ def decide_approval(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Cannot decide approval on submission in '{submission.status}' status. Only PENDING_REVIEW or UNDER_REVIEW submissions may be decided.",
+        )
+
+    # SEC-08: Strict Maker-Checker Principle Enforcement
+    # The submitter/author of a compliance submission cannot approve, reject, or decide on their own copy.
+    if submission.submitted_by_user_id == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Independent review required: Submitter cannot approve their own submission.",
         )
 
     if decision == "APPROVE":
