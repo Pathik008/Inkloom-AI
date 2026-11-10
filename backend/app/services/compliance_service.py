@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Any, List
 
 from fastapi import HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import (
@@ -121,7 +121,52 @@ def _approved_prices(db: Session, version: BrandKitVersion) -> list[str]:
     return prices
 
 
-def _run_analysis(db: Session, submission: ContentSubmission, version: BrandKitVersion) -> ComplianceAnalysis:
+def _run_analysis(
+    db: Session,
+    submission: ContentSubmission,
+    version: BrandKitVersion,
+    *,
+    mode: str = "deterministic",
+    include_experimental_score: bool = False,
+    llm_provider: Any = None,
+) -> ComplianceAnalysis:
+    if mode == "hybrid":
+        from app.services.ai_workflow.compliance_graph import (
+            ComplianceReviewWorkflow,
+            WorkflowState,
+        )
+
+        try:
+            workflow = ComplianceReviewWorkflow(db)
+            state = WorkflowState(
+                submission_id=submission.id,
+                organisation_id=submission.organisation_id,
+                brand_kit_version_id=version.id,
+                raw_text=submission.content_text,
+                mode=mode,
+                llm_provider=llm_provider,
+                include_experimental_score=include_experimental_score,
+            )
+            res_state = workflow.execute_sync(state)
+        except (ValueError, engine.RuleDefinitionError) as exc:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+
+        analysis = ComplianceAnalysis(
+            id=uuid.uuid4(),
+            submission_id=submission.id,
+            organisation_id=submission.organisation_id,
+            brand_kit_version_id=version.id,
+            engine_version="1.0.0",
+            score=res_state.final_score,
+            result=res_state.final_result,
+            rules_evaluated=res_state.rules_evaluated,
+            findings_json=res_state.final_findings,
+            scoring_json=res_state.final_scoring_json,
+        )
+        db.add(analysis)
+        return analysis
+
+    # Standard deterministic analysis
     try:
         result = engine.analyze(
             submission.content_text,
@@ -130,6 +175,7 @@ def _run_analysis(db: Session, submission: ContentSubmission, version: BrandKitV
         )
     except (ValueError, engine.RuleDefinitionError) as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+
     analysis = ComplianceAnalysis(
         id=uuid.uuid4(),
         submission_id=submission.id,
@@ -309,6 +355,9 @@ def submit_content(
     brand_kit_id: uuid.UUID,
     title: str,
     content_text: str,
+    mode: str = "deterministic",
+    include_experimental_score: bool = False,
+    llm_provider: Any = None,
 ) -> ContentSubmission:
     version = resolve_published_version(db, organisation_id=organisation_id, brand_kit_id=brand_kit_id)
     submission = ContentSubmission(
@@ -324,7 +373,14 @@ def submit_content(
     )
     db.add(submission)
     db.flush()
-    _run_analysis(db, submission, version)
+    _run_analysis(
+        db,
+        submission,
+        version,
+        mode=mode,
+        include_experimental_score=include_experimental_score,
+        llm_provider=llm_provider,
+    )
 
     _log_audit(
         db,
@@ -342,8 +398,14 @@ def submit_content(
     return submission
 
 
-def get_submission_or_404(db: Session, *, organisation_id: uuid.UUID, submission_id: uuid.UUID) -> ContentSubmission:
-    submission = db.execute(
+def get_submission_or_404(
+    db: Session,
+    *,
+    organisation_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    for_update: bool = False,
+) -> ContentSubmission:
+    stmt = (
         select(ContentSubmission)
         .options(
             joinedload(ContentSubmission.submitter),
@@ -355,7 +417,12 @@ def get_submission_or_404(db: Session, *, organisation_id: uuid.UUID, submission
             ContentSubmission.id == submission_id,
             ContentSubmission.organisation_id == organisation_id,
         )
-    ).unique().scalar_one_or_none()
+    )
+    if for_update:
+        bind = getattr(db, "bind", None) or (db.get_bind() if hasattr(db, "get_bind") else None)
+        if bind and getattr(bind, "dialect", None) and bind.dialect.name == "postgresql":
+            stmt = stmt.with_for_update(of=ContentSubmission)
+    submission = db.execute(stmt).unique().scalar_one_or_none()
     if submission is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Content submission not found.")
     return submission
@@ -372,6 +439,7 @@ def list_submissions(
     stmt = (
         select(ContentSubmission)
         .options(
+            joinedload(ContentSubmission.submitter),
             joinedload(ContentSubmission.assigned_reviewer),
             joinedload(ContentSubmission.reviewed_by),
         )
@@ -385,6 +453,90 @@ def list_submissions(
     return list(db.execute(stmt).unique().scalars().all())
 
 
+def get_compliance_metrics(db: Session, *, organisation_id: uuid.UUID) -> dict[str, Any]:
+    """Calculate aggregated submission counts using SQL aggregation (SEC-07)."""
+    stmt = (
+        select(
+            func.count(ContentSubmission.id).label("total_submissions"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            ContentSubmission.status.in_(
+                                [SubmissionStatus.PENDING_REVIEW, SubmissionStatus.UNDER_REVIEW]
+                            ),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("pending_submissions"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (ContentSubmission.status == SubmissionStatus.APPROVED, 1),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("approved_submissions"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (ContentSubmission.status == SubmissionStatus.REJECTED, 1),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("rejected_submissions"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (ContentSubmission.status == SubmissionStatus.CHANGES_REQUESTED, 1),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("changes_requested_submissions"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (ContentSubmission.status == SubmissionStatus.DRAFT, 1),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("draft_submissions"),
+        )
+        .where(ContentSubmission.organisation_id == organisation_id)
+    )
+    row = db.execute(stmt).one()
+
+    total = int(row.total_submissions or 0)
+    pending = int(row.pending_submissions or 0)
+    approved = int(row.approved_submissions or 0)
+    rejected = int(row.rejected_submissions or 0)
+    changes_requested = int(row.changes_requested_submissions or 0)
+    draft = int(row.draft_submissions or 0)
+
+    return {
+        "organisation_id": organisation_id,
+        "total_submissions": total,
+        "pending_submissions": pending,
+        "approved_submissions": approved,
+        "rejected_submissions": rejected,
+        "changes_requested_submissions": changes_requested,
+        "draft_submissions": draft,
+        "total": total,
+        "pending_review": pending,
+        "approved": approved,
+        "rejected": rejected,
+        "changes_requested": changes_requested,
+        "draft": draft,
+    }
+
+
 def list_eligible_reviewers(db: Session, *, organisation_id: uuid.UUID) -> list[dict[str, Any]]:
     """Return all active organisation members who hold REVIEWER or ADMIN privileges."""
     stmt = (
@@ -395,7 +547,7 @@ def list_eligible_reviewers(db: Session, *, organisation_id: uuid.UUID) -> list[
             OrganisationMembership.organisation_id == organisation_id,
             OrganisationMembership.status == MembershipStatus.ACTIVE,
             User.is_active.is_(True),
-            Role.name.in_([RoleName.ADMIN, RoleName.REVIEWER, RoleName.BRAND_MANAGER]),
+            Role.name.in_([RoleName.ADMIN, RoleName.REVIEWER]),
         )
         .order_by(User.full_name.asc())
     )
@@ -423,47 +575,66 @@ def submit_for_approval(
     """Submit a draft or revised submission for human approval."""
     submission = get_submission_or_404(db, organisation_id=organisation_id, submission_id=submission_id)
 
+    if submission.status not in (SubmissionStatus.DRAFT, SubmissionStatus.CHANGES_REQUESTED):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot submit submission in '{submission.status}' status for approval. Allowed states are DRAFT and CHANGES_REQUESTED.",
+        )
+
     # Validate assigned reviewer if provided
     if assigned_reviewer_id:
         rev_membership = db.execute(
-            select(OrganisationMembership).where(
+            select(OrganisationMembership, Role)
+            .join(Role, Role.id == OrganisationMembership.role_id)
+            .where(
                 OrganisationMembership.organisation_id == organisation_id,
                 OrganisationMembership.user_id == assigned_reviewer_id,
                 OrganisationMembership.status == MembershipStatus.ACTIVE,
             )
-        ).scalar_one_or_none()
+        ).first()
         if not rev_membership:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assigned reviewer is not an active member.")
+        _mem, role = rev_membership
+        if role.name not in (RoleName.ADMIN, RoleName.REVIEWER):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Target reviewer does not hold approval authority (must be ADMIN or REVIEWER).",
+            )
         submission.assigned_reviewer_id = assigned_reviewer_id
 
-    submission.status = SubmissionStatus.PENDING_REVIEW
+    try:
+        submission.status = SubmissionStatus.PENDING_REVIEW
 
-    action = ContentReviewAction(
-        id=uuid.uuid4(),
-        submission_id=submission.id,
-        organisation_id=organisation_id,
-        actor_user_id=user_id,
-        action=ReviewActionType.SUBMIT_FOR_APPROVAL,
-        comments=comments,
-    )
-    db.add(action)
+        action = ContentReviewAction(
+            id=uuid.uuid4(),
+            submission_id=submission.id,
+            organisation_id=organisation_id,
+            actor_user_id=user_id,
+            action=ReviewActionType.SUBMIT_FOR_APPROVAL,
+            comments=comments,
+        )
+        db.add(action)
 
-    _log_audit(
-        db,
-        organisation_id=organisation_id,
-        user_id=user_id,
-        brand_kit_id=submission.brand_kit_id,
-        brand_kit_version_id=submission.brand_kit_version_id,
-        action="CONTENT_SUBMITTED_FOR_APPROVAL",
-        submission_id=submission.id,
-        details={
-            "revision_number": submission.revision_number,
-            "assigned_reviewer_id": str(assigned_reviewer_id) if assigned_reviewer_id else None,
-            "comments": comments,
-        },
-    )
+        _log_audit(
+            db,
+            organisation_id=organisation_id,
+            user_id=user_id,
+            brand_kit_id=submission.brand_kit_id,
+            brand_kit_version_id=submission.brand_kit_version_id,
+            action="CONTENT_SUBMITTED_FOR_APPROVAL",
+            submission_id=submission.id,
+            details={
+                "revision_number": submission.revision_number,
+                "assigned_reviewer_id": str(assigned_reviewer_id) if assigned_reviewer_id else None,
+                "comments": comments,
+            },
+        )
 
-    db.commit()
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
     db.refresh(submission)
     return submission
 
@@ -476,43 +647,69 @@ def assign_reviewer(
     submission_id: uuid.UUID,
     reviewer_id: uuid.UUID,
 ) -> ContentSubmission:
-    submission = get_submission_or_404(db, organisation_id=organisation_id, submission_id=submission_id)
+    submission = get_submission_or_404(
+        db,
+        organisation_id=organisation_id,
+        submission_id=submission_id,
+        for_update=True,
+    )
+
+    if submission.status in (SubmissionStatus.APPROVED, SubmissionStatus.REJECTED):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot assign reviewer to submission in '{submission.status}' status.",
+        )
+
     rev_membership = db.execute(
-        select(OrganisationMembership).where(
+        select(OrganisationMembership, Role)
+        .join(Role, Role.id == OrganisationMembership.role_id)
+        .where(
             OrganisationMembership.organisation_id == organisation_id,
             OrganisationMembership.user_id == reviewer_id,
             OrganisationMembership.status == MembershipStatus.ACTIVE,
         )
-    ).scalar_one_or_none()
+    ).first()
     if not rev_membership:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target reviewer is not an active member.")
 
-    submission.assigned_reviewer_id = reviewer_id
-    if submission.status == SubmissionStatus.DRAFT:
-        submission.status = SubmissionStatus.PENDING_REVIEW
+    _mem, role = rev_membership
+    if role.name not in (RoleName.ADMIN, RoleName.REVIEWER):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Target reviewer does not hold approval authority (must be ADMIN or REVIEWER).",
+        )
 
-    action = ContentReviewAction(
-        id=uuid.uuid4(),
-        submission_id=submission.id,
-        organisation_id=organisation_id,
-        actor_user_id=user_id,
-        action=ReviewActionType.ASSIGN_REVIEWER,
-        comments=f"Assigned reviewer {reviewer_id}",
-    )
-    db.add(action)
+    try:
+        submission.assigned_reviewer_id = reviewer_id
+        if submission.status == SubmissionStatus.DRAFT:
+            submission.status = SubmissionStatus.PENDING_REVIEW
 
-    _log_audit(
-        db,
-        organisation_id=organisation_id,
-        user_id=user_id,
-        brand_kit_id=submission.brand_kit_id,
-        brand_kit_version_id=submission.brand_kit_version_id,
-        action="CONTENT_REVIEWER_ASSIGNED",
-        submission_id=submission.id,
-        details={"assigned_reviewer_id": str(reviewer_id)},
-    )
+        action = ContentReviewAction(
+            id=uuid.uuid4(),
+            submission_id=submission.id,
+            organisation_id=organisation_id,
+            actor_user_id=user_id,
+            action=ReviewActionType.ASSIGN_REVIEWER,
+            comments=f"Assigned reviewer {reviewer_id}",
+        )
+        db.add(action)
 
-    db.commit()
+        _log_audit(
+            db,
+            organisation_id=organisation_id,
+            user_id=user_id,
+            brand_kit_id=submission.brand_kit_id,
+            brand_kit_version_id=submission.brand_kit_version_id,
+            action="CONTENT_REVIEWER_ASSIGNED",
+            submission_id=submission.id,
+            details={"assigned_reviewer_id": str(reviewer_id)},
+        )
+
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
     db.refresh(submission)
     return submission
 
@@ -526,53 +723,71 @@ def decide_approval(
     decision: str,
     comments: str | None = None,
 ) -> ContentSubmission:
-    submission = get_submission_or_404(db, organisation_id=organisation_id, submission_id=submission_id)
     decision = decision.strip().upper()
-
-    if decision == "APPROVE":
-        submission.status = SubmissionStatus.APPROVED
-        action_type = ReviewActionType.APPROVE
-        audit_action = "CONTENT_APPROVED"
-    elif decision == "REJECT":
-        submission.status = SubmissionStatus.REJECTED
-        action_type = ReviewActionType.REJECT
-        audit_action = "CONTENT_REJECTED"
-    elif decision == "REQUEST_CHANGES":
-        submission.status = SubmissionStatus.CHANGES_REQUESTED
-        action_type = ReviewActionType.REQUEST_CHANGES
-        audit_action = "CONTENT_CHANGES_REQUESTED"
-    else:
+    if decision not in ("APPROVE", "REJECT", "REQUEST_CHANGES"):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Decision must be APPROVE, REJECT, or REQUEST_CHANGES.",
         )
 
-    submission.reviewed_by_user_id = user_id
-    submission.reviewed_at = utcnow()
-    submission.reviewer_comments = comments
-
-    action = ContentReviewAction(
-        id=uuid.uuid4(),
-        submission_id=submission.id,
-        organisation_id=organisation_id,
-        actor_user_id=user_id,
-        action=action_type,
-        comments=comments,
-    )
-    db.add(action)
-
-    _log_audit(
+    submission = get_submission_or_404(
         db,
         organisation_id=organisation_id,
-        user_id=user_id,
-        brand_kit_id=submission.brand_kit_id,
-        brand_kit_version_id=submission.brand_kit_version_id,
-        action=audit_action,
-        submission_id=submission.id,
-        details={"decision": decision, "comments": comments, "revision_number": submission.revision_number},
+        submission_id=submission_id,
+        for_update=True,
     )
 
-    db.commit()
+    if submission.status not in (SubmissionStatus.PENDING_REVIEW, SubmissionStatus.UNDER_REVIEW):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot decide approval on submission in '{submission.status}' status. Only PENDING_REVIEW or UNDER_REVIEW submissions may be decided.",
+        )
+
+    if decision == "APPROVE":
+        target_status = SubmissionStatus.APPROVED
+        action_type = ReviewActionType.APPROVE
+        audit_action = "CONTENT_APPROVED"
+    elif decision == "REJECT":
+        target_status = SubmissionStatus.REJECTED
+        action_type = ReviewActionType.REJECT
+        audit_action = "CONTENT_REJECTED"
+    else:
+        target_status = SubmissionStatus.CHANGES_REQUESTED
+        action_type = ReviewActionType.REQUEST_CHANGES
+        audit_action = "CONTENT_CHANGES_REQUESTED"
+
+    try:
+        submission.status = target_status
+        submission.reviewed_by_user_id = user_id
+        submission.reviewed_at = utcnow()
+        submission.reviewer_comments = comments
+
+        action = ContentReviewAction(
+            id=uuid.uuid4(),
+            submission_id=submission.id,
+            organisation_id=organisation_id,
+            actor_user_id=user_id,
+            action=action_type,
+            comments=comments,
+        )
+        db.add(action)
+
+        _log_audit(
+            db,
+            organisation_id=organisation_id,
+            user_id=user_id,
+            brand_kit_id=submission.brand_kit_id,
+            brand_kit_version_id=submission.brand_kit_version_id,
+            action=audit_action,
+            submission_id=submission.id,
+            details={"decision": decision, "comments": comments, "revision_number": submission.revision_number},
+        )
+
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
     db.refresh(submission)
     return submission
 
@@ -586,28 +801,33 @@ def add_comment(
     comments: str,
 ) -> ContentSubmission:
     submission = get_submission_or_404(db, organisation_id=organisation_id, submission_id=submission_id)
-    action = ContentReviewAction(
-        id=uuid.uuid4(),
-        submission_id=submission.id,
-        organisation_id=organisation_id,
-        actor_user_id=user_id,
-        action=ReviewActionType.COMMENT,
-        comments=comments.strip(),
-    )
-    db.add(action)
+    try:
+        action = ContentReviewAction(
+            id=uuid.uuid4(),
+            submission_id=submission.id,
+            organisation_id=organisation_id,
+            actor_user_id=user_id,
+            action=ReviewActionType.COMMENT,
+            comments=comments.strip(),
+        )
+        db.add(action)
 
-    _log_audit(
-        db,
-        organisation_id=organisation_id,
-        user_id=user_id,
-        brand_kit_id=submission.brand_kit_id,
-        brand_kit_version_id=submission.brand_kit_version_id,
-        action="CONTENT_COMMENT_ADDED",
-        submission_id=submission.id,
-        details={"comments": comments.strip()},
-    )
+        _log_audit(
+            db,
+            organisation_id=organisation_id,
+            user_id=user_id,
+            brand_kit_id=submission.brand_kit_id,
+            brand_kit_version_id=submission.brand_kit_version_id,
+            action="CONTENT_COMMENT_ADDED",
+            submission_id=submission.id,
+            details={"comments": comments.strip()},
+        )
 
-    db.commit()
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
     db.refresh(submission)
     return submission
 

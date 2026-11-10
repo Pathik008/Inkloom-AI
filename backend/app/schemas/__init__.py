@@ -667,6 +667,8 @@ class ContentSubmissionCreateRequest(BaseModel):
     brand_kit_id: uuid.UUID
     title: str = Field(default="Untitled content", min_length=1, max_length=200)
     content_text: str = Field(..., min_length=1, max_length=50000)
+    mode: str = Field(default="deterministic", pattern="^(hybrid|deterministic)$")
+    include_experimental_score: bool = Field(default=False)
 
     @field_validator("content_text")
     @classmethod
@@ -794,8 +796,114 @@ class ContentSubmissionSummaryResponse(BaseModel):
     score: int | None = None
     result: str | None = None
     status: str = "DRAFT"
+    submitted_by_user_id: uuid.UUID | None = None
+    submitted_by_name: str | None = None
     assigned_reviewer_id: uuid.UUID | None = None
     assigned_reviewer_name: str | None = None
     reviewed_by_name: str | None = None
     reviewed_at: datetime | None = None
     created_at: datetime
+
+
+class ComplianceMetricsResponse(BaseModel):
+    organisation_id: uuid.UUID
+    total_submissions: int
+    pending_submissions: int
+    approved_submissions: int
+    rejected_submissions: int
+    changes_requested_submissions: int
+    draft_submissions: int
+    total: int
+    pending_review: int
+    approved: int
+    rejected: int
+    changes_requested: int
+    draft: int
+
+
+class DocumentExtractionResponse(BaseModel):
+    filename: str
+    format: str
+    method: str
+    page_count: int
+    char_count: int
+    extracted_text: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    ocr_fallback_triggered: bool = False
+    submission: ContentSubmissionResponse | None = None
+
+
+class BrandGuidelineDocumentResponse(BaseModel):
+    id: uuid.UUID
+    brand_kit_version_id: uuid.UUID
+    organisation_id: uuid.UUID
+    title: str
+    document_category: str
+    original_filename: str
+    stored_filename: str
+    file_size_bytes: int
+    file_sha256: str
+    page_count: int | None = None
+    parsing_status: str
+    parse_attempt_count: int = 0
+    last_error_code: str | None = None
+    last_error_message: str | None = None
+    chunks_count: int = 0
+    created_at: datetime
+    parsed_at: datetime | None = None
+    embedded_at: datetime | None = None
+    uploaded_by_user_id: uuid.UUID | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BrandDocumentChunkResponse(BaseModel):
+    id: uuid.UUID
+    document_id: uuid.UUID
+    brand_kit_version_id: uuid.UUID
+    organisation_id: uuid.UUID
+    chunk_index: int
+    page_number: int | None = None
+    section_heading: str | None = None
+    char_start: int
+    char_end: int
+    content: str
+    content_sha256: str
+    token_count: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SemanticRetrievalRequest(BaseModel):
+    query_text: str = Field(..., min_length=1, max_length=2000, description="Query text to search across guideline document chunks")
+    top_k: int = Field(default=8, ge=1, le=50, description="Maximum number of candidate chunks to retrieve")
+    similarity_threshold: float = Field(default=0.72, ge=0.0, le=1.0, description="Minimum cosine similarity threshold (0.0 to 1.0)")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class RetrievedChunkResponse(BaseModel):
+    chunk_id: uuid.UUID
+    document_id: uuid.UUID
+    document_title: str
+    chunk_index: int
+    page_number: int | None = None
+    section_heading: str | None = None
+    char_start: int
+    char_end: int
+    content: str
+    content_sha256: str
+    token_count: int
+    similarity_score: float
+    is_mock: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SemanticRetrievalResponse(BaseModel):
+    query: str
+    chunks_count: int
+    chunks: list[RetrievedChunkResponse] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)

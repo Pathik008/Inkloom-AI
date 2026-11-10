@@ -11,6 +11,8 @@ import { OrganisationSettingsPage } from './pages/OrganisationSettingsPage';
 import { PlannedModulePage } from './pages/PlannedModulePage';
 import { BrandRulesPage } from './pages/BrandRulesPage';
 import { ComplianceWorkbenchPage } from './pages/ComplianceWorkbenchPage';
+import { ApprovalsPage } from './pages/ApprovalsPage';
+import { ContentUploadPage } from './pages/ContentUploadPage';
 
 export const App: React.FC = () => {
   return (
@@ -50,18 +52,7 @@ export const App: React.FC = () => {
               path="content-upload"
               element={
                 <ProtectedRoute requiredPermission="content:create">
-                  <PlannedModulePage
-                    title="Multimodal Content Ingestion & Extraction"
-                    phase="Phase 4"
-                    owner="Riddhi Yadav & Tanmay Mishra"
-                    summary="Upload plain text, social captions, PDFs, DOCX files, and promotional images with PyMuPDF, python-docx, and OCR extraction."
-                    deliverables={[
-                      'File size and MIME-type validation',
-                      'PyMuPDF and python-docx structured text extraction',
-                      'Image OCR extraction with source span preservation',
-                      'SHA-256 content revision creation on every upload/edit',
-                    ]}
-                  />
+                  <ContentUploadPage />
                 </ProtectedRoute>
               }
             />
@@ -95,18 +86,8 @@ export const App: React.FC = () => {
             <Route
               path="approvals"
               element={
-                <ProtectedRoute requiredPermission="approval:decide">
-                  <PlannedModulePage
-                    title="Human Approval Gate & Reviewer Inbox"
-                    phase="Phase 8"
-                    owner="Pragati Kumari & Pathik Talwar"
-                    summary="Enforce DRAFT -> SUBMITTED -> UNDER_REVIEW -> APPROVED / REJECTED / REVISION_REQUESTED workflow bound to exact revision and SHA-256 hash."
-                    deliverables={[
-                      'Cryptographic SHA-256 revision verification before approval',
-                      'Role-based Reviewer/Approver permission checks',
-                      'Reviewer comments, rejection reasons, and revision requests',
-                    ]}
-                  />
+                <ProtectedRoute requiredPermission="content:review">
+                  <ApprovalsPage />
                 </ProtectedRoute>
               }
             />

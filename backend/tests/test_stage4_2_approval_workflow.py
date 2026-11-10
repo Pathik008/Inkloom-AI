@@ -183,13 +183,29 @@ async def test_reviewer_approval_decisions_and_audit(test_db):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         kit_id = await _setup_published_kit(client, admin_hdr, org.id)
 
-        # 1. Content created and submitted for review
+        # 1. Content created in DRAFT
         r = await client.post(
             f"/api/v1/organisations/{org.id}/compliance/submissions",
             json={"brand_kit_id": kit_id, "title": "Decision Test", "content_text": "Text for review."},
             headers=admin_hdr,
         )
         sub_id = r.json()["id"]
+
+        # Directly deciding on DRAFT is forbidden by SEC-03 state machine (409 Conflict)
+        r_draft_decide = await client.post(
+            f"/api/v1/organisations/{org.id}/compliance/submissions/{sub_id}/decide",
+            json={"decision": "APPROVE"},
+            headers=rev_hdr,
+        )
+        assert r_draft_decide.status_code == 409
+
+        # Submit for approval: DRAFT -> PENDING_REVIEW
+        r_sub = await client.post(
+            f"/api/v1/organisations/{org.id}/compliance/submissions/{sub_id}/submit-for-approval",
+            headers=admin_hdr,
+        )
+        assert r_sub.status_code == 200
+        assert r_sub.json()["status"] == SubmissionStatus.PENDING_REVIEW
 
         # 2. Reviewer requests changes
         r_req = await client.post(
@@ -212,6 +228,14 @@ async def test_reviewer_approval_decisions_and_audit(test_db):
         rev2_id = r_rev2.json()["id"]
         assert r_rev2.json()["revision_number"] == 2
         assert len(r_rev2.json()["all_revisions"]) == 2
+
+        # Revision 2 is DRAFT; submit Revision 2 for approval: DRAFT -> PENDING_REVIEW
+        r_rev2_sub = await client.post(
+            f"/api/v1/organisations/{org.id}/compliance/submissions/{rev2_id}/submit-for-approval",
+            headers=admin_hdr,
+        )
+        assert r_rev2_sub.status_code == 200
+        assert r_rev2_sub.json()["status"] == SubmissionStatus.PENDING_REVIEW
 
         # 4. Reviewer approves Revision 2
         r_app = await client.post(

@@ -26,4 +26,9 @@ api_router.include_router(
     prefix="/organisations/{organisation_id}/compliance/reviewers",
     tags=["Compliance"],
 )
+api_router.include_router(
+    compliance.metrics_router,
+    prefix="/organisations/{organisation_id}/compliance/metrics",
+    tags=["Compliance"],
+)
 api_router.include_router(invitations.router, prefix="/invitations", tags=["Invitations"])

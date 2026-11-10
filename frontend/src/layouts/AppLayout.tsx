@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { to: '/content-upload', label: 'Content Ingestion', icon: FileUp, phase: 'Phase 4', requiredPermission: 'content:create' },
   { to: '/compliance-review', label: 'Compliance Review', icon: FileCheck2, phase: 'Phase 5-7', requiredPermission: 'content:review' },
   { to: '/content-editor', label: 'Content Editor', icon: FileEdit, phase: 'Phase 7', requiredPermission: 'content:edit' },
-  { to: '/approvals', label: 'Approval Inbox', icon: CheckSquare, phase: 'Phase 8', requiredPermission: 'approval:decide' },
+  { to: '/approvals', label: 'Approval Inbox', icon: CheckSquare, phase: 'Phase 8', requiredPermission: 'content:review' },
   { to: '/audit-logs', label: 'Audit Trail', icon: ScrollText, phase: 'Phase 8', requiredPermission: 'audit:read' },
   { to: '/analytics', label: 'Analytics & Reports', icon: BarChart3, phase: 'Phase 9', requiredPermission: 'content:review' },
 ];

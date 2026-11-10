@@ -1,5 +1,8 @@
-﻿import {
+import {
   AuthTokenResponse,
+  BrandKitSummary,
+  ComplianceMetrics,
+  ContentSubmissionSummary,
   CurrentUser,
   HealthStatus,
   InvitationAcceptanceResponse,
@@ -277,5 +280,192 @@ export async function registerAndAcceptInvitation(
       method: 'POST',
       body: JSON.stringify(payload),
     },
+  );
+}
+
+// --- Brand Hub & Compliance Analytics / Summaries ---
+
+export async function fetchBrandKits(
+  organisationId: string,
+  includeArchived: boolean = false,
+): Promise<BrandKitSummary[]> {
+  const query = includeArchived ? '?include_archived=true' : '';
+  return apiRequest<BrandKitSummary[]>(
+    `/api/v1/organisations/${organisationId}/brand-kits${query}`,
+    { method: 'GET' },
+    organisationId,
+  );
+}
+
+export async function fetchContentSubmissions(
+  organisationId: string,
+  options?: { status?: string; limit?: number },
+): Promise<ContentSubmissionSummary[]> {
+  const params = new URLSearchParams();
+  if (options?.status) params.append('status', options.status);
+  if (options?.limit) params.append('limit', String(options.limit));
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+
+  return apiRequest<ContentSubmissionSummary[]>(
+    `/api/v1/organisations/${organisationId}/compliance/submissions${queryString}`,
+    { method: 'GET' },
+    organisationId,
+  );
+}
+
+export async function fetchComplianceMetrics(
+  organisationId: string,
+): Promise<ComplianceMetrics> {
+  return apiRequest<ComplianceMetrics>(
+    `/api/v1/organisations/${organisationId}/compliance/metrics`,
+    { method: 'GET' },
+    organisationId,
+  );
+}
+
+export async function fetchSubmissionDetail(
+  organisationId: string,
+  submissionId: string,
+): Promise<any> {
+  return apiRequest<any>(
+    `/api/v1/organisations/${organisationId}/compliance/submissions/${submissionId}`,
+    { method: 'GET' },
+    organisationId,
+  );
+}
+
+export async function submitApprovalDecision(
+  organisationId: string,
+  submissionId: string,
+  payload: { decision: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES'; comments?: string | null },
+): Promise<any> {
+  return apiRequest<any>(
+    `/api/v1/organisations/${organisationId}/compliance/submissions/${submissionId}/decide`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+    organisationId,
+  );
+}
+
+export async function addReviewComment(
+  organisationId: string,
+  submissionId: string,
+  comments: string,
+): Promise<any> {
+  return apiRequest<any>(
+    `/api/v1/organisations/${organisationId}/compliance/submissions/${submissionId}/comments`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ comments }),
+    },
+    organisationId,
+  );
+}
+
+export async function assignSubmissionReviewer(
+  organisationId: string,
+  submissionId: string,
+  reviewerId: string,
+): Promise<any> {
+  return apiRequest<any>(
+    `/api/v1/organisations/${organisationId}/compliance/submissions/${submissionId}/assign-reviewer`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ reviewer_id: reviewerId }),
+    },
+    organisationId,
+  );
+}
+
+// --- Multimodal Document Ingestion & Extraction (Phase 5.3) ---
+
+export async function uploadDocument(
+  organisationId: string,
+  formData: FormData,
+): Promise<any> {
+  const token = getStoredToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  headers['X-Organisation-ID'] = organisationId;
+
+  const response = await fetch(
+    `${getApiBaseUrl()}/api/v1/organisations/${organisationId}/compliance/submissions/upload`,
+    {
+      method: 'POST',
+      headers,
+      body: formData,
+    },
+  );
+
+  let data: any = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    let detail = `HTTP ${response.status}: Request failed`;
+    if (data && typeof data === 'object' && 'detail' in data) {
+      const raw = data.detail;
+      detail = typeof raw === 'string' ? raw : JSON.stringify(raw);
+    }
+    throw new ApiError(response.status, detail);
+  }
+
+  return data;
+}
+
+// --- Phase 6 Compliance Analysis & Workbench ---
+
+export async function analyzeContentSubmission(
+  organisationId: string,
+  payload: {
+    brand_kit_id: string;
+    title: string;
+    content_text: string;
+    mode?: 'deterministic' | 'hybrid';
+    include_experimental_score?: boolean;
+  },
+): Promise<any> {
+  return apiRequest<any>(
+    `/api/v1/organisations/${organisationId}/compliance/submissions/analyze`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+    organisationId,
+  );
+}
+
+export async function submitSubmissionForApproval(
+  organisationId: string,
+  submissionId: string,
+  comments?: string | null,
+): Promise<any> {
+  return apiRequest<any>(
+    `/api/v1/organisations/${organisationId}/compliance/submissions/${submissionId}/submit-for-approval`,
+    {
+      method: 'POST',
+      body: JSON.stringify(comments ? { comments } : {}),
+    },
+    organisationId,
+  );
+}
+
+export async function applySubmissionCorrections(
+  organisationId: string,
+  submissionId: string,
+): Promise<any> {
+  return apiRequest<any>(
+    `/api/v1/organisations/${organisationId}/compliance/submissions/${submissionId}/apply-corrections`,
+    {
+      method: 'POST',
+    },
+    organisationId,
   );
 }

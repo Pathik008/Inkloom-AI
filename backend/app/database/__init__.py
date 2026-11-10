@@ -108,3 +108,62 @@ def check_database_connection() -> tuple[bool, str]:
         return True, f"connected ({ACTIVE_DATABASE_URI.split(':')[0]})"
     except Exception as exc:
         return False, f"unreachable ({exc.__class__.__name__})"
+
+
+def init_db(
+    session: Session | None = None,
+    *,
+    fail_fast: bool = False,
+) -> bool:
+    """Explicit, testable database initialization and RBAC seeding mechanism.
+
+    - If an existing session is provided (e.g. from an injected test database or
+      dependency override), seeds roles and permissions directly on it.
+    - If no session is provided, attempts to seed using SessionLocal().
+    - In production (or when fail_fast=True), connection failures raise RuntimeError.
+    - In development/offline, connection failures are safely logged and return False.
+    """
+    from app.services.rbac_service import seed_roles_and_permissions
+
+    # Case 1: Session provided explicitly (e.g. injected SQLite test database)
+    if session is not None:
+        seed_roles_and_permissions(session)
+        return True
+
+    # Case 2: Production / Fail-fast enforcement
+    is_prod = settings.APP_ENV.lower() in ("production", "staging") or fail_fast
+    if is_prod:
+        # Enforce strict production connectivity check (never silently ignore)
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+        except Exception as exc:
+            raise RuntimeError(
+                f"Database connection failed during production startup: {exc}"
+            ) from exc
+
+        db = SessionLocal()
+        try:
+            seed_roles_and_permissions(db)
+            return True
+        except Exception as exc:
+            raise RuntimeError(
+                f"Database initialization failed during production startup: {exc}"
+            ) from exc
+        finally:
+            db.close()
+
+    # Case 3: Development / Offline environment
+    db_ok, _ = check_database_connection()
+    if not db_ok:
+        return False
+
+    try:
+        db = SessionLocal()
+        try:
+            seed_roles_and_permissions(db)
+            return True
+        finally:
+            db.close()
+    except Exception:
+        return False

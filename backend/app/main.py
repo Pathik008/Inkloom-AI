@@ -1,25 +1,48 @@
 """Inkloom AI — FastAPI Application Entrypoint."""
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 from app.api.routes import api_router
 from app.api.routes.health import build_health_payload
 from app.core.config import settings
-from app.database import Base, SessionLocal, engine
+from app.database import get_db, init_db
 from app.schemas import HealthResponse
-from app.services.rbac_service import seed_roles_and_permissions
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
-    """Ensure database tables and predefined RBAC roles/permissions exist on startup."""
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    try:
-        seed_roles_and_permissions(db)
-    finally:
-        db.close()
+async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
+    """Application lifespan managing startup and shutdown tasks.
+
+    - Schema management is handled exclusively by Alembic migrations (create_all removed).
+    - Decoupled from global engine: honors test dependency overrides for get_db.
+    - Seeds roles and permissions through explicit init_db() mechanism.
+    - Never silently ignores production database connection failures.
+    """
+    if get_db in application.dependency_overrides:
+        override_fn = application.dependency_overrides[get_db]
+        try:
+            res = override_fn()
+            if hasattr(res, "__next__") or hasattr(res, "__iter__"):
+                gen = iter(res)
+                try:
+                    session = next(gen)
+                    init_db(session=session)
+                finally:
+                    if hasattr(gen, "close"):
+                        gen.close()
+            elif isinstance(res, Session):
+                init_db(session=res)
+        except Exception as exc:
+            logger.debug("Dependency override role initialization in lifespan: %s", exc)
+    else:
+        is_production = settings.APP_ENV.lower() in ("production", "staging")
+        init_db(fail_fast=is_production)
+
     yield
 
 
