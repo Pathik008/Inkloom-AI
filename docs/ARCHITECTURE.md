@@ -142,7 +142,7 @@ erDiagram
 flowchart TD
     subgraph Client["Frontend Layer (React + Vite + TypeScript)"]
         AuthUI["Login, Register & ProtectedRoute Guard"]
-        UI_Dash["Dashboard, Org Switcher & Brand Hub\n(Riddhi Yadav)"]
+        UI_Dash["Dashboard, Org Switcher & Brand Hub\n(Pragati Kumari)"]
         UI_Rev["Compliance Review, Editor & Approvals\n(Pragati Kumari)"]
     end
 
@@ -156,7 +156,7 @@ flowchart TD
         AuditSvc["Append-Only Security Audit Logger (Phase 8)"]
     end
 
-    subgraph AI["AI & Multimodal Layer (LangGraph + RAG — Tanmay Mishra)"]
+    subgraph AI["AI & Multimodal Layer (LangGraph + RAG — Pathik Talwar)"]
         DocParser["Document & OCR Extractor (Phase 4)"]
         Chunker["Chunker & Embedder (BAAI/bge-large-en-v1.5 1024-d, Phase 6)"]
         Orchestrator["LangGraph 11-Node Review Workflow (Phase 6)"]

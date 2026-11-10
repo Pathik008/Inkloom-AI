@@ -1,6 +1,6 @@
 """Multimodal Document Extraction & OCR Service (Phase 5.3).
 
-Primary Owner: Tanmay Mishra (AI processing & document extraction)
+Primary Owner: Pathik Talwar (AI processing & document extraction)
 Backend Integration: Pathik Talwar
 
 Supported formats:
