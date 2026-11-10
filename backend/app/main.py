@@ -2,7 +2,7 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.api.routes import api_router
@@ -69,10 +69,20 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    @application.get("/health", response_model=HealthResponse, tags=["System"])
-    async def root_health() -> HealthResponse:
+    @application.get(
+        "/health",
+        response_model=HealthResponse,
+        responses={
+            200: {"model": HealthResponse, "description": "System operational and database connected"},
+            503: {"model": HealthResponse, "description": "Database disconnected or unavailable"},
+        },
+        tags=["System"],
+    )
+    async def root_health(response: Response) -> HealthResponse:
         """Top-level health check endpoint."""
-        return build_health_payload()
+        payload, http_code = build_health_payload()
+        response.status_code = http_code
+        return payload
 
     application.include_router(api_router, prefix=settings.API_V1_STR)
     return application

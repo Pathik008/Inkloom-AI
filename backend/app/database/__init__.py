@@ -17,8 +17,20 @@ class Base(DeclarativeBase):
 
 
 def _is_postgres_port_open() -> bool:
+    host = settings.POSTGRES_HOST
+    port = settings.POSTGRES_PORT
+    if settings.DATABASE_URL:
+        try:
+            from sqlalchemy.engine.url import make_url
+            parsed = make_url(settings.sqlalchemy_database_uri)
+            if parsed.host:
+                host = parsed.host
+            if parsed.port:
+                port = parsed.port
+        except Exception:
+            pass
     try:
-        with socket.create_connection((settings.POSTGRES_HOST, settings.POSTGRES_PORT), timeout=0.4):
+        with socket.create_connection((host, port), timeout=0.5):
             return True
     except OSError:
         return False
@@ -84,29 +96,19 @@ def get_db() -> Generator[Session, None, None]:
 
 def check_database_connection() -> tuple[bool, str]:
     """Probe the active database to report real connectivity and engine status."""
-    if ACTIVE_DATABASE_URI.startswith("postgresql"):
-        if not _is_postgres_port_open():
-            return False, f"PostgreSQL unreachable: port {settings.POSTGRES_PORT} closed on {settings.POSTGRES_HOST}"
-        try:
-            with engine.connect() as connection:
-                connection.execute(text("SELECT 1"))
-            return True, "connected (PostgreSQL 16 + pgvector)"
-        except Exception as exc:
-            return False, f"PostgreSQL connection error ({exc.__class__.__name__})"
-
-    if USING_SQLITE_FALLBACK:
-        try:
-            with engine.connect() as connection:
-                connection.execute(text("SELECT 1"))
-            return True, "connected (SQLite dev fallback: ALLOW_SQLITE_DEV_FALLBACK=true; PostgreSQL port 5432 offline)"
-        except Exception as exc:
-            return False, f"SQLite fallback error ({exc.__class__.__name__})"
-
     try:
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
+        if ACTIVE_DATABASE_URI.startswith("postgresql"):
+            return True, "connected (PostgreSQL 16 + pgvector)"
+        if USING_SQLITE_FALLBACK:
+            return True, "connected (SQLite dev fallback: ALLOW_SQLITE_DEV_FALLBACK=true)"
         return True, f"connected ({ACTIVE_DATABASE_URI.split(':')[0]})"
     except Exception as exc:
+        if ACTIVE_DATABASE_URI.startswith("postgresql"):
+            return False, f"PostgreSQL connection error ({exc.__class__.__name__})"
+        if USING_SQLITE_FALLBACK:
+            return False, f"SQLite fallback error ({exc.__class__.__name__})"
         return False, f"unreachable ({exc.__class__.__name__})"
 
 

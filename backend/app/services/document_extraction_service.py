@@ -28,6 +28,8 @@ from typing import Any, BinaryIO
 
 from fastapi import HTTPException, UploadFile, status
 
+from app.core.config import settings
+
 # Allowed MIME types and extensions
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"}
 ALLOWED_MIME_TYPES = {
@@ -57,8 +59,8 @@ MAX_ZIP_COMPRESSION_RATIO = 50.0  # 50:1 max compression ratio (ZIP bomb guard)
 MAX_EXTRACTED_TEXT_CHARS = 2_000_000  # 2M characters max extracted text
 OCR_TIMEOUT_SECONDS = 30
 
-# Base storage path for uploaded artifacts (organisation isolated)
-LOCAL_UPLOAD_ROOT = Path("storage/uploads").resolve()
+# Base storage path for uploaded artifacts (organisation isolated, configurable via UPLOAD_STORAGE_DIR)
+LOCAL_UPLOAD_ROOT = Path(settings.UPLOAD_STORAGE_DIR).resolve()
 
 
 class ExtractionError(Exception):

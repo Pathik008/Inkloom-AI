@@ -22,8 +22,13 @@ RUN npm run build
 # Stage 2: Serve production bundle with Nginx
 FROM nginx:alpine-slim
 
-# Copy custom Nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Template environment variables for runtime Nginx reverse proxy configuration
+ENV PORT=80 \
+    BACKEND_URL=http://backend:8000 \
+    NGINX_ENVSUBST_FILTER="PORT BACKEND_URL"
+
+# Copy custom Nginx configuration template for runtime envsubst substitution
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 # Copy compiled static assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -31,6 +36,6 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
 
 HEALTHCHECK --interval=15s --timeout=3s --retries=3 \
-    CMD wget -qO- http://localhost/health || exit 1
+    CMD wget -qO- http://localhost:${PORT}/health || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
