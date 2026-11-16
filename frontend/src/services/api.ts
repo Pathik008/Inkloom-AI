@@ -6,6 +6,7 @@ import {
   ComplianceMetrics,
   ContentSubmissionSummary,
   CurrentUser,
+  GuidelineDocumentCategory,
   HealthStatus,
   InvitationAcceptanceResponse,
   InvitationCreatePayload,
@@ -339,8 +340,28 @@ export async function fetchSubmissionDetail(
 export async function submitApprovalDecision(
   organisationId: string,
   submissionId: string,
+  decision: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES',
+  comments?: string | null,
+): Promise<any>;
+export async function submitApprovalDecision(
+  organisationId: string,
+  submissionId: string,
   payload: { decision: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES'; comments?: string | null },
+): Promise<any>;
+export async function submitApprovalDecision(
+  organisationId: string,
+  submissionId: string,
+  payloadOrDecision:
+    | { decision: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES'; comments?: string | null }
+    | 'APPROVE'
+    | 'REJECT'
+    | 'REQUEST_CHANGES',
+  maybeComments?: string | null,
 ): Promise<any> {
+  const payload =
+    typeof payloadOrDecision === 'string'
+      ? { decision: payloadOrDecision, comments: maybeComments }
+      : payloadOrDecision;
   return apiRequest<any>(
     `/api/v1/organisations/${organisationId}/compliance/submissions/${submissionId}/decide`,
     {
@@ -482,8 +503,33 @@ export async function uploadGuidelineDocument(
   organisationId: string,
   brandKitId: string,
   versionId: string,
+  file: File,
+  title?: string,
+  category?: GuidelineDocumentCategory,
+): Promise<BrandGuidelineDocument>;
+export async function uploadGuidelineDocument(
+  organisationId: string,
+  brandKitId: string,
+  versionId: string,
   formData: FormData,
+): Promise<BrandGuidelineDocument>;
+export async function uploadGuidelineDocument(
+  organisationId: string,
+  brandKitId: string,
+  versionId: string,
+  fileOrFormData: File | FormData,
+  title?: string,
+  category?: GuidelineDocumentCategory,
 ): Promise<BrandGuidelineDocument> {
+  let formData: FormData;
+  if (fileOrFormData instanceof FormData) {
+    formData = fileOrFormData;
+  } else {
+    formData = new FormData();
+    formData.append('file', fileOrFormData);
+    if (title) formData.append('title', title);
+    if (category) formData.append('document_category', category);
+  }
   return apiRequest<BrandGuidelineDocument>(
     `/api/v1/organisations/${organisationId}/brand-kits/${brandKitId}/versions/${versionId}/documents`,
     {

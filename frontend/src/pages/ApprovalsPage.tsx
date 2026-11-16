@@ -205,8 +205,10 @@ export const ApprovalsPage: React.FC = () => {
       const updated = await submitApprovalDecision(
         activeOrganisationId,
         selectedSubId,
-        confirmAction,
-        actionComments.trim() || undefined,
+        {
+          decision: confirmAction,
+          comments: actionComments.trim() || undefined,
+        },
       );
 
       setActionSuccessNotice(
