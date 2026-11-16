@@ -3,7 +3,7 @@
 **Enterprise Brand Compliance & Human-Gated Approval Engine**<br/>
 *Built for CodeTitans India 2026 — Round 3 Finalist Submission*<br/>
 *Team: TITANIUM*<br/>
-*Authors: Pragati Kumari & Pathik Talwar*
+*Authors: Pathik Talwar & Pragati Kumari 
 
 [![Python Version](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com/)
