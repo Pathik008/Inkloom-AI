@@ -20,12 +20,12 @@
 
 - [x] **Submitter / Admin Account Verified:**
   - Email: `judge@inkloom.ai`
-  - Password: `DemoJudge2026!`
+  - Password: `[Provided Privately to Judges]`
   - Role: `ADMIN` (Permissions: `approval:decide`, `audit:read`, `brand:manage`, `brand:read`, `content:create`, `content:edit`, `content:review`, `organisation:manage`, `users:manage`, `users:read`)
   - Organisation: `Acme Financial Demo` (`6654f29a-05be-432d-91a6-ce66ee034366`)
 - [x] **Independent Reviewer Account Verified:**
   - Email: `independent_reviewer@inkloom.ai`
-  - Password: `DemoReviewer2026!`
+  - Password: `[Provided Privately to Judges]`
   - Role: `REVIEWER` (Permissions: `approval:decide`, `brand:read`, `content:review`, `users:read`)
   - Organisation: `Acme Financial Demo` (`6654f29a-05be-432d-91a6-ce66ee034366`)
 - [x] **Preserved Evaluation Records:**

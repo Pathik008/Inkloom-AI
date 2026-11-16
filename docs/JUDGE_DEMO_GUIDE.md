@@ -21,7 +21,7 @@ Judges can evaluate Inkloom AI using **either** the pre-seeded demo account **or
 
 ### Option A: Seeded Judge Demo Account
 - **Email:** `judge@inkloom.ai`
-- **Password:** `DemoJudge2026!`
+- **Password:** `[Provided Privately to Judges]`
 - **Role:** `ADMIN` (Full tenant administrative privileges)
 - **Organisation:** `Acme Financial Demo` (slug: `acme-financial-demo`)
 - **Brand Kit:** `Acme Retail Banking Kit` (Version 1, `PUBLISHED`)
@@ -69,7 +69,7 @@ Follow these steps in your browser (`http://localhost:5173`):
 
 ### Step 1: Sign In
 1. Navigate to `http://localhost:5173/login`.
-2. Enter `judge@inkloom.ai` and `DemoJudge2026!`.
+2. Enter `judge@inkloom.ai` and `[Provided Privately to Judges]` (or click "Use Demo Judge Access").
 3. Click **Sign In** to land on the tenant dashboard.
 
 ### Step 2: Explore Brand Hub (`/brand-hub`)

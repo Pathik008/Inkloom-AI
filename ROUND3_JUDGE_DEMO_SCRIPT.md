@@ -43,7 +43,7 @@ Before starting the live demonstration, ensure:
 > *Meet **Inkloom AI** — an enterprise-grade multi-agent compliance engine that guarantees mathematical, deterministic precision. Every claim is verified against version-locked Brand Guidelines, pinpointed to exact character offsets, and remediated in one click under strict Maker-Checker dual control."*
 
 **Visual Action:**
-- Log in using `judge@inkloom.ai` / `<DEMO_PASSWORD_PROVIDED_SEPARATELY>` (or click "Use Demo Judge Access").
+- Log in using `judge@inkloom.ai` / `[Provided Privately to Judges]` (or click "Use Demo Judge Access").
 - Highlight the **Live Telemetry Cards** on the Dashboard: Total Submissions, Approval Rates, and Pending Queues computed directly from SQL aggregations.
 
 ---

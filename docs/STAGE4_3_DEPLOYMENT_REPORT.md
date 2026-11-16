@@ -184,7 +184,7 @@ The entire migration tree from project inception through human approvals is line
 | `SECRET_KEY` | Development placeholder | 64-char hex string (`openssl rand -hex 32`) | Validated by Pydantic validator; boot fails if default string detected |
 | `POSTGRES_PASSWORD` | `inkloom_dev_password_change_me` | Cryptographically random string | Validated in `production` mode; boot fails if default string detected |
 | `DATABASE_URL` | Localhost with default dev password | Dedicated production PostgreSQL connection string | Validated in `production` mode |
-| `DEMO_ADMIN_PASSWORD` | `DemoJudge2026!` | Rotated or disabled | Opt-in only via `SEED_DEMO_DATA=true`; disabled in multi-tenant SaaS |
+| `DEMO_ADMIN_PASSWORD` | `[Provided Privately to Judges]` | Rotated or disabled | Opt-in only via `SEED_DEMO_DATA=true`; disabled in multi-tenant SaaS |
 
 ### 5.2 Multi-Tenant Isolation & Authorization Verification
 
