@@ -29,7 +29,7 @@ from app.models import Role, User, OrganisationMembership
 
 TARGET_EMAIL = "judge@inkloom.ai"
 EXPECTED_ROLE = "ADMIN"
-EXPECTED_RAILWAY_PROJECT = "inkloom-ai-production"
+EXPECTED_RAILWAY_PROJECT = "Inkloom AI Production"
 EXPECTED_RAILWAY_ENVIRONMENT = "production"
 EXPECTED_RAILWAY_SERVICE = "inkloom-backend"
 
@@ -143,7 +143,9 @@ def verify_database_target(
             )
         if expected_project:
             p_val = project_name or project_id or ""
-            if p_val.lower().strip() != expected_project.lower().strip():
+            p_norm = p_val.lower().replace("-", " ").replace("_", " ").strip()
+            exp_norm = expected_project.lower().replace("-", " ").replace("_", " ").strip()
+            if p_norm != exp_norm:
                 raise RuntimeError(
                     f"Database Target Violation: Railway project mismatch. "
                     f"Expected '{expected_project}', but found '{p_val}'."

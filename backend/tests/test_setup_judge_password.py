@@ -32,6 +32,29 @@ def test_railway_target_with_valid_metadata_accepted(monkeypatch):
     assert result["deployment_id"] == "dep-019671e3-test"
 
 
+def test_railway_target_with_authoritative_title_metadata_accepted(monkeypatch):
+    """Authoritative Railway project title 'Inkloom AI Production' with spaces is accepted."""
+    monkeypatch.setenv("RAILWAY_PROJECT_NAME", "Inkloom AI Production")
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
+    monkeypatch.setenv("RAILWAY_SERVICE_NAME", "inkloom-backend")
+    monkeypatch.setenv("RAILWAY_DEPLOYMENT_ID", "dep-railway-active-01")
+
+    db_info = {
+        "driver": "postgresql+psycopg",
+        "host": "hearty-intuition.railway.internal",
+        "port": "5432",
+        "database": "inkloom_db",
+        "username": "postgres",
+    }
+    result = verify_database_target(db_info, require_railway=True)
+    assert result["database_host"] == "hearty-intuition.railway.internal"
+    assert result["database_name"] == "inkloom_db"
+    assert result["project"] == "Inkloom AI Production"
+    assert result["environment"] == "production"
+    assert result["service"] == "inkloom-backend"
+    assert result["deployment_id"] == "dep-railway-active-01"
+
+
 @pytest.mark.parametrize(
     "local_host",
     [
