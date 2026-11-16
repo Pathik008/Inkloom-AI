@@ -3,7 +3,8 @@
 Complies strictly with CodeTitans Round 3 evaluation governance:
 - Targets ONLY judge@inkloom.ai
 - Positively validates Railway runtime & database identity (--require-railway)
-- Strictly rejects local Docker databases (localhost, 127.0.0.1, db, inkloom_db, inkloom_local_test)
+  Requires BOTH exact private mesh suffix (.railway.internal) AND valid Railway runtime metadata
+- Strictly rejects local Docker databases (localhost, 127.0.0.1, db, inkloom_local_test, etc.)
 - Requires role ADMIN and is_active == True
 - Concealed interactive password input via getpass.getpass() (min 16 chars, alphanumeric, confirmation match)
 - Reuses app.core.security.hash_password() (Argon2id) and verify_password()
@@ -28,6 +29,9 @@ from app.models import Role, User, OrganisationMembership
 
 TARGET_EMAIL = "judge@inkloom.ai"
 EXPECTED_ROLE = "ADMIN"
+EXPECTED_RAILWAY_PROJECT = "inkloom-ai-production"
+EXPECTED_RAILWAY_ENVIRONMENT = "production"
+EXPECTED_RAILWAY_SERVICE = "inkloom-backend"
 
 
 def sanitize_database_url(raw_url: str) -> dict[str, str]:
@@ -38,7 +42,7 @@ def sanitize_database_url(raw_url: str) -> dict[str, str]:
             "driver": url.drivername,
             "host": url.host or "unknown_host",
             "port": str(url.port or 5432),
-            "database": url.database or "railway",
+            "database": url.database or "inkloom_db",
             "username": url.username or "postgres",
         }
     except Exception:
@@ -61,18 +65,31 @@ def validate_password_complexity(pwd: str) -> None:
         raise ValueError("Password must contain at least one letter and one number.")
 
 
-def verify_database_target(db_info: dict[str, str], require_railway: bool = False) -> None:
-    """Ensure database target is identified and prevent accidental local Docker modification."""
-    host = (db_info.get("host") or "").lower()
-    dbname = (db_info.get("database") or "").lower()
-    driver = (db_info.get("driver") or "").lower()
+def verify_database_target(
+    db_info: dict[str, str],
+    require_railway: bool = False,
+    expected_project: str | None = EXPECTED_RAILWAY_PROJECT,
+    expected_environment: str = EXPECTED_RAILWAY_ENVIRONMENT,
+    expected_service: str = EXPECTED_RAILWAY_SERVICE,
+) -> dict[str, str]:
+    """Ensure database target is identified and prevent accidental local Docker modification.
 
-    # Strictly reject any sqlite or local dev fallback
+    When require_railway is True, requires BOTH:
+    1. Exact Railway private hostname suffix: .railway.internal
+    2. Valid Railway runtime metadata confirming expected project, production environment,
+       backend service, and deployment.
+    Fails closed if any required metadata is absent or inconsistent.
+    """
+    host = (db_info.get("host") or "").lower().strip()
+    dbname = (db_info.get("database") or "").lower().strip()
+    driver = (db_info.get("driver") or "").lower().strip()
+
+    # 1. Strictly reject any sqlite or local dev fallback
     if "sqlite" in driver:
         raise RuntimeError("Database Target Violation: SQLite fallback is strictly prohibited in production.")
 
-    # Identify local / development environments
-    is_local_host = host in (
+    # 2. Strictly reject known local hosts
+    local_hosts = (
         "localhost",
         "127.0.0.1",
         "0.0.0.0",
@@ -81,32 +98,96 @@ def verify_database_target(db_info: dict[str, str], require_railway: bool = Fals
         "inkloom-postgres",
         "inkloom-prod-postgres",
     )
-    is_local_db = dbname in ("inkloom_db", "inkloom_local_test", "inkloom_prod_db")
-
-    if is_local_host or is_local_db:
-        if require_railway:
-            raise RuntimeError(
-                f"Database Target Violation: Execution attempted against local/development database "
-                f"(host='{host}', db='{dbname}'). Railway Cloud database required."
-            )
-
-    if require_railway:
-        # Positively validate Railway identity:
-        # Check either Railway environment variables or Railway domain in host or dbname == 'railway'
-        is_railway_env = bool(
-            os.getenv("RAILWAY_PROJECT_ID")
-            or os.getenv("RAILWAY_ENVIRONMENT")
-            or os.getenv("RAILWAY_SERVICE_ID")
-            or os.getenv("RAILWAY_STATIC_URL")
-            or os.getenv("RAILWAY_PRIVATE_DOMAIN")
+    if host in local_hosts or host.endswith(".local"):
+        raise RuntimeError(
+            f"Database Target Violation: Execution attempted against local host '{host}' "
+            f"(db='{dbname}'). Railway Cloud database required."
         )
-        is_railway_host = "railway.internal" in host or "railway" in host or dbname == "railway"
 
-        if not (is_railway_env or is_railway_host):
+    # 3. Strictly reject explicit local automated test databases
+    if dbname == "inkloom_local_test":
+        raise RuntimeError(
+            f"Database Target Violation: Execution attempted against local test database '{dbname}'. "
+            f"Railway Cloud production database required."
+        )
+
+    # 4. Enforce Railway Cloud validation when --require-railway is enabled
+    if require_railway:
+        # Check condition A: Exact Railway private hostname suffix
+        if not host.endswith(".railway.internal"):
             raise RuntimeError(
-                f"Database Target Violation: Positive Railway Cloud validation failed. "
-                f"Host '{host}' / DB '{dbname}' does not match Railway Cloud private network."
+                f"Database Target Violation: Host '{host}' does not have the exact required "
+                f"Railway private hostname suffix '.railway.internal'."
             )
+
+        # Check condition B: Valid Railway runtime metadata (fail closed, zero fallback values)
+        project_name = os.getenv("RAILWAY_PROJECT_NAME")
+        project_id = os.getenv("RAILWAY_PROJECT_ID")
+        env_name = os.getenv("RAILWAY_ENVIRONMENT_NAME") or os.getenv("RAILWAY_ENVIRONMENT")
+        service_name = os.getenv("RAILWAY_SERVICE_NAME")
+        service_id = os.getenv("RAILWAY_SERVICE_ID")
+        deployment_id = os.getenv("RAILWAY_DEPLOYMENT_ID")
+
+        # Deployment ID must be present and non-empty
+        if not deployment_id or not deployment_id.strip():
+            raise RuntimeError(
+                "Database Target Violation: Missing required Railway metadata 'RAILWAY_DEPLOYMENT_ID'. "
+                "Execution must occur within an active Railway deployment."
+            )
+
+        # Project identity check: Must be present and match expected project if configured
+        if not (project_name or project_id):
+            raise RuntimeError(
+                "Database Target Violation: Missing required Railway project metadata "
+                "(neither 'RAILWAY_PROJECT_NAME' nor 'RAILWAY_PROJECT_ID' is set)."
+            )
+        if expected_project:
+            p_val = project_name or project_id or ""
+            if p_val.lower().strip() != expected_project.lower().strip():
+                raise RuntimeError(
+                    f"Database Target Violation: Railway project mismatch. "
+                    f"Expected '{expected_project}', but found '{p_val}'."
+                )
+
+        # Environment identity check: Must be present and match expected environment
+        if not env_name or not env_name.strip():
+            raise RuntimeError(
+                "Database Target Violation: Missing required Railway environment metadata "
+                "(neither 'RAILWAY_ENVIRONMENT_NAME' nor 'RAILWAY_ENVIRONMENT' is set)."
+            )
+        if env_name.lower().strip() != expected_environment.lower().strip():
+            raise RuntimeError(
+                f"Database Target Violation: Railway environment mismatch. "
+                f"Expected '{expected_environment}', but found '{env_name}'."
+            )
+
+        # Service identity check: Must be present and match expected service
+        if not (service_name or service_id):
+            raise RuntimeError(
+                "Database Target Violation: Missing required Railway service metadata "
+                "(neither 'RAILWAY_SERVICE_NAME' nor 'RAILWAY_SERVICE_ID' is set)."
+            )
+        if expected_service:
+            s_val = service_name or service_id or ""
+            if s_val.lower().strip() != expected_service.lower().strip():
+                raise RuntimeError(
+                    f"Database Target Violation: Railway service mismatch. "
+                    f"Expected '{expected_service}', but found '{s_val}'."
+                )
+
+        return {
+            "project": project_name or project_id or "",
+            "environment": env_name,
+            "service": service_name or service_id or "",
+            "deployment_id": deployment_id,
+            "database_host": host,
+            "database_name": dbname,
+        }
+
+    return {
+        "database_host": host,
+        "database_name": dbname,
+    }
 
 
 def verify_judge_preconditions(db: Session, expected_uuid: str | None = None) -> User:
@@ -179,6 +260,9 @@ def run_setup(
     expected_uuid: str | None = None,
     preflight_only: bool = False,
     require_railway: bool = False,
+    expected_project: str | None = EXPECTED_RAILWAY_PROJECT,
+    expected_environment: str = EXPECTED_RAILWAY_ENVIRONMENT,
+    expected_service: str = EXPECTED_RAILWAY_SERVICE,
 ) -> int:
     """Execute pre-check or interactive password rotation."""
     db_info = sanitize_database_url(database_url)
@@ -199,9 +283,20 @@ def run_setup(
     print("-" * 70)
 
     try:
-        verify_database_target(db_info, require_railway=require_railway)
+        target_meta = verify_database_target(
+            db_info,
+            require_railway=require_railway,
+            expected_project=expected_project,
+            expected_environment=expected_environment,
+            expected_service=expected_service,
+        )
         if require_railway:
             print("  ✓ Database target confirmed: Railway Cloud managed database.")
+            print(f"  ✓ Verified Railway Project   : {target_meta.get('project')}")
+            print(f"  ✓ Verified Environment       : {target_meta.get('environment')}")
+            print(f"  ✓ Verified Service           : {target_meta.get('service')}")
+            print(f"  ✓ Verified Deployment ID     : {target_meta.get('deployment_id')}")
+            print(f"  ✓ Verified Private Mesh Host : {target_meta.get('database_host')}")
     except RuntimeError as r_err:
         print(f"  ✗ DATABASE TARGET CHECK FAILED: {r_err}")
         print("  STOPPING EXECUTION. Zero data modified.")
@@ -322,6 +417,24 @@ def main():
         help="Expected judge account UUID (optional validation)",
     )
     parser.add_argument(
+        "--expected-project",
+        type=str,
+        default=EXPECTED_RAILWAY_PROJECT,
+        help=f"Expected Railway project name (defaults to {EXPECTED_RAILWAY_PROJECT})",
+    )
+    parser.add_argument(
+        "--expected-environment",
+        type=str,
+        default=EXPECTED_RAILWAY_ENVIRONMENT,
+        help=f"Expected Railway environment (defaults to {EXPECTED_RAILWAY_ENVIRONMENT})",
+    )
+    parser.add_argument(
+        "--expected-service",
+        type=str,
+        default=EXPECTED_RAILWAY_SERVICE,
+        help=f"Expected Railway service name (defaults to {EXPECTED_RAILWAY_SERVICE})",
+    )
+    parser.add_argument(
         "--require-railway",
         action="store_true",
         default=False,
@@ -345,6 +458,9 @@ def main():
         expected_uuid=args.expected_uuid,
         preflight_only=args.preflight,
         require_railway=args.require_railway,
+        expected_project=args.expected_project,
+        expected_environment=args.expected_environment,
+        expected_service=args.expected_service,
     ))
 
 
