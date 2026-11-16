@@ -301,3 +301,52 @@ export interface ContentAnalyzePayload {
   mode?: 'deterministic' | 'hybrid';
   include_experimental_score?: boolean;
 }
+
+// --- Brand Guideline Documents & RAG Types ---
+
+export type GuidelineDocumentCategory =
+  | 'STYLE_GUIDE'
+  | 'PRODUCT_CATALOG'
+  | 'LEGAL_POLICY'
+  | 'TONE_PLAYBOOK'
+  | 'BRAND_BOOK';
+
+export type DocumentParsingStatus = 'PENDING' | 'PROCESSING' | 'PARSED' | 'FAILED';
+
+export interface BrandGuidelineDocument {
+  id: string;
+  brand_kit_version_id: string;
+  organisation_id: string;
+  title: string;
+  document_category: GuidelineDocumentCategory | string;
+  original_filename: string;
+  stored_filename: string;
+  file_size_bytes: number;
+  file_sha256: string;
+  page_count: number | null;
+  parsing_status: DocumentParsingStatus | string;
+  parse_attempt_count: number;
+  last_error_code: string | null;
+  last_error_message: string | null;
+  chunks_count: number;
+  created_at: string;
+  parsed_at: string | null;
+  embedded_at: string | null;
+  uploaded_by_user_id: string | null;
+}
+
+export interface BrandDocumentChunk {
+  id: string;
+  document_id: string;
+  brand_kit_version_id: string;
+  organisation_id: string;
+  chunk_index: number;
+  page_number: number | null;
+  section_heading: string | null;
+  char_start: number;
+  char_end: number;
+  content: string;
+  content_sha256: string;
+  token_count: number;
+  created_at: string;
+}

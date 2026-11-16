@@ -164,21 +164,21 @@ export const DashboardHome: React.FC = () => {
     !statsLoading;
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Live System Telemetry Banner */}
-      <section className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900/95 to-indigo-950/30 p-6 shadow-lg">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+      {/* Live System Telemetry Banner - Minimal ChatGPT Dark Surface */}
+      <section className="rounded-xl border border-[#424242] bg-[#2F2F2F] p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300">
-              <ShieldCheck className="h-3.5 w-3.5 text-indigo-400" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#10A37F]/30 bg-[#10A37F]/10 px-3 py-0.5 text-xs font-medium text-[#10A37F]">
+              <ShieldCheck className="h-3.5 w-3.5 text-[#10A37F] shrink-0" />
               <span>Phases 1–4 & 8 Live</span>
-              <span>•</span>
+              <span className="text-[#10A37F]/50">•</span>
               <span>Multi-Tenant Auth, Brand Hub & Compliance Online</span>
             </div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">
+            <h2 className="text-xl font-semibold text-[#ECECEC] tracking-tight">
               Inkloom AI Live Telemetry & Compliance Operations
             </h2>
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs text-[#A1A1AA] leading-relaxed">
               Every compliance finding and approval state in Inkloom AI is backed by persistent database
               records, cryptographically verified revisions, and organisation-isolated tenant rules.
             </p>
@@ -188,109 +188,109 @@ export const DashboardHome: React.FC = () => {
             type="button"
             onClick={handleFullRefresh}
             disabled={loading || statsLoading}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow hover:bg-indigo-500 transition disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#10A37F] hover:bg-[#0D8F70] px-4 py-2 text-xs font-semibold text-white transition disabled:opacity-50"
             title="Refresh backend telemetry and live database metrics"
           >
-            <RefreshCw className={`h-4 w-4 ${loading || statsLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${loading || statsLoading ? 'animate-spin' : ''}`} />
             <span>Refresh Dashboard</span>
           </button>
         </div>
 
         {/* Live System Health Cards */}
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>FastAPI Backend</span>
-              <Server className="h-4 w-4 text-indigo-400" />
+        <div className="mt-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border border-[#424242] bg-[#212121] p-3.5 transition hover:border-[#71717A]">
+            <div className="flex items-center justify-between text-xs text-[#A1A1AA]">
+              <span className="uppercase tracking-wider text-[10px]">FastAPI Backend</span>
+              <Server className="h-3.5 w-3.5 text-[#A1A1AA]" />
             </div>
             <div className="mt-2 flex items-center gap-2">
               {isApiOnline ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="h-4 w-4 text-[#10A37F] shrink-0" />
               ) : (
-                <XCircle className="h-5 w-5 text-rose-400 shrink-0" />
+                <XCircle className="h-4 w-4 text-[#EF4444] shrink-0" />
               )}
-              <span className="text-lg font-semibold text-white">
+              <span className="text-sm font-semibold text-[#ECECEC]">
                 {loading ? 'Probing...' : isApiOnline ? 'Connected' : 'Unreachable'}
               </span>
             </div>
-            <p className="mt-1 text-xs text-slate-400 truncate" title={getApiBaseUrl()}>
-              Endpoint: {getApiBaseUrl()}/api/v1/health
+            <p className="mt-1 text-[11px] text-[#71717A] font-mono truncate" title={getApiBaseUrl()}>
+              {getApiBaseUrl()}/api/v1/health
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>PostgreSQL + pgvector</span>
-              <Database className="h-4 w-4 text-indigo-400" />
+          <div className="rounded-lg border border-[#424242] bg-[#212121] p-3.5 transition hover:border-[#71717A]">
+            <div className="flex items-center justify-between text-xs text-[#A1A1AA]">
+              <span className="uppercase tracking-wider text-[10px]">PostgreSQL + pgvector</span>
+              <Database className="h-3.5 w-3.5 text-[#A1A1AA]" />
             </div>
             <div className="mt-2 flex items-center gap-2">
               {health?.database_connected ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="h-4 w-4 text-[#10A37F] shrink-0" />
               ) : (
-                <ShieldAlert className="h-5 w-5 text-amber-400 shrink-0" />
+                <ShieldAlert className="h-4 w-4 text-[#F59E0B] shrink-0" />
               )}
-              <span className="text-lg font-semibold text-white">
+              <span className="text-sm font-semibold text-[#ECECEC]">
                 {health ? (health.database_connected ? 'Online' : 'Offline') : 'Unknown'}
               </span>
             </div>
-            <p className="mt-1 text-xs text-slate-400 truncate" title={health?.database_status}>
+            <p className="mt-1 text-[11px] text-[#71717A] font-mono truncate" title={health?.database_status}>
               Status: {health?.database_status ?? 'Awaiting API response'}
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>Vector Index Spec</span>
-              <Cpu className="h-4 w-4 text-indigo-400" />
+          <div className="rounded-lg border border-[#424242] bg-[#212121] p-3.5 transition hover:border-[#71717A]">
+            <div className="flex items-center justify-between text-xs text-[#A1A1AA]">
+              <span className="uppercase tracking-wider text-[10px]">Vector Index Spec</span>
+              <Cpu className="h-3.5 w-3.5 text-[#A1A1AA]" />
             </div>
-            <div className="mt-2 text-lg font-semibold text-white">
+            <div className="mt-2 text-sm font-semibold text-[#ECECEC]">
               {health ? `${health.pgvector_target_dimension} Dimensions` : '1024 Dimensions'}
             </div>
-            <p className="mt-1 text-xs text-slate-400">
-              Model: BAAI/bge-large-en-v1.5
+            <p className="mt-1 text-[11px] text-[#71717A] font-mono truncate">
+              BAAI/bge-large-en-v1.5
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>Last Telemetry Probe</span>
-              <Clock className="h-4 w-4 text-indigo-400" />
+          <div className="rounded-lg border border-[#424242] bg-[#212121] p-3.5 transition hover:border-[#71717A]">
+            <div className="flex items-center justify-between text-xs text-[#A1A1AA]">
+              <span className="uppercase tracking-wider text-[10px]">Last Telemetry Probe</span>
+              <Clock className="h-3.5 w-3.5 text-[#A1A1AA]" />
             </div>
-            <div className="mt-2 text-lg font-semibold text-white">
+            <div className="mt-2 text-sm font-semibold text-[#ECECEC]">
               {lastChecked ? lastChecked.toLocaleTimeString() : 'Pending'}
             </div>
-            <p className="mt-1 text-xs text-slate-400">
-              Env: {health?.environment ?? 'development'} (v{health?.version ?? '0.1.0'})
+            <p className="mt-1 text-[11px] text-[#71717A] font-mono truncate">
+              {health?.environment ?? 'dev'} (v{health?.version ?? '0.1.0'})
             </p>
           </div>
         </div>
       </section>
 
       {/* Live Operational Metrics Section */}
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+      <section className="rounded-xl border border-[#424242] bg-[#2F2F2F] p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#424242] pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-semibold text-white">
+              <h3 className="text-base font-semibold text-[#ECECEC]">
                 Live Organisation Telemetry & Content Metrics
               </h3>
               {statsLoading && (
-                <span className="inline-flex items-center gap-1 text-xs text-indigo-400 animate-pulse">
-                  <RefreshCw className="h-3 w-3 animate-spin" /> Fetching live counts...
+                <span className="inline-flex items-center gap-1 text-xs text-[#10A37F] animate-pulse bg-[#10A37F]/10 px-2 py-0.5 rounded border border-[#10A37F]/20">
+                  <RefreshCw className="h-3 w-3 animate-spin" /> Fetching counts...
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[#A1A1AA] mt-0.5">
               Directly computed from persistent database records for your active organisation workspace.
             </p>
           </div>
           <div className="flex items-center gap-3">
             {statsLastUpdated && (
-              <span className="text-[11px] text-slate-500">
+              <span className="text-xs text-[#71717A]">
                 Updated {statsLastUpdated.toLocaleTimeString()}
               </span>
             )}
-            <span className="rounded-md bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 text-xs font-medium text-emerald-300">
+            <span className="rounded bg-[#212121] border border-[#424242] px-2.5 py-0.5 text-xs text-[#A1A1AA]">
               Tenant-Isolated DB Records
             </span>
           </div>
@@ -298,7 +298,7 @@ export const DashboardHome: React.FC = () => {
 
         {/* Error Notification */}
         {statsError && (
-          <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300">
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-[#EF4444]/30 bg-[#EF4444]/10 p-3 text-xs text-[#EF4444]">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{statsError}</span>
@@ -306,215 +306,215 @@ export const DashboardHome: React.FC = () => {
             <button
               type="button"
               onClick={() => void loadLiveStats()}
-              className="text-xs underline hover:text-rose-200 transition"
+              className="text-xs font-medium underline hover:text-[#ECECEC] transition"
             >
               Retry
             </button>
           </div>
         )}
 
-        {/* Live Metrics Grid with Skeleton Loaders and Per-Metric RBAC States */}
+        {/* Live Metrics Grid */}
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Card 1: Total Submissions */}
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 flex flex-col justify-between hover:border-slate-700/80 transition">
+          <div className="rounded-lg border border-[#424242] bg-[#212121] p-4 flex flex-col justify-between hover:border-[#71717A] transition">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wider">
                 Total Submissions
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-[#2F2F2F] text-[#ECECEC] border border-[#424242]">
                 <FileCheck2 className="h-4 w-4" />
               </div>
             </div>
             <div className="mt-4">
               {statsLoading && !stats ? (
-                <div className="h-8 w-20 animate-pulse rounded bg-slate-800" />
+                <div className="h-8 w-20 animate-pulse rounded bg-[#2F2F2F]" />
               ) : !canReadContent ? (
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 py-2">
-                  <Lock className="h-3.5 w-3.5 text-slate-400" />
+                <div className="flex items-center gap-1.5 text-xs text-[#71717A] py-2">
+                  <Lock className="h-3.5 w-3.5 text-[#71717A]" />
                   <span>Requires content:review</span>
                 </div>
               ) : (
-                <div className="text-3xl font-bold tracking-tight text-white flex items-baseline gap-1.5">
+                <div className="text-2xl font-bold tracking-tight text-[#ECECEC] flex items-baseline gap-1.5">
                   <span>{stats?.totalSubmissions ?? '—'}</span>
                   {stats?.isSubmissionsCapped && (
-                    <span className="text-xs font-normal text-slate-500" title="Capped at latest 200 records in current API">
+                    <span className="text-xs font-normal text-[#71717A]" title="Capped at latest 200 records in current API">
                       (latest 200)
                     </span>
                   )}
                 </div>
               )}
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-[#71717A]">
                 All marketing & copy submissions evaluated
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="mt-4 pt-3 border-t border-[#424242] flex items-center justify-between text-xs">
               {canReadContent ? (
                 <Link
                   to="/compliance-review"
-                  className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-medium"
+                  className="inline-flex items-center gap-1 text-[#10A37F] hover:underline font-medium"
                 >
                   <span>View Workbench</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               ) : (
-                <span className="text-[11px] text-slate-600">Restricted role</span>
+                <span className="text-[11px] text-[#71717A]">Restricted role</span>
               )}
             </div>
           </div>
 
           {/* Card 2: Pending Reviews */}
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 flex flex-col justify-between hover:border-slate-700/80 transition">
+          <div className="rounded-lg border border-[#424242] bg-[#212121] p-4 flex flex-col justify-between hover:border-[#71717A] transition">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wider">
                 Pending Reviews
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-[#2F2F2F] text-[#F59E0B] border border-[#424242]">
                 <Clock4 className="h-4 w-4" />
               </div>
             </div>
             <div className="mt-4">
               {statsLoading && !stats ? (
-                <div className="h-8 w-20 animate-pulse rounded bg-slate-800" />
+                <div className="h-8 w-20 animate-pulse rounded bg-[#2F2F2F]" />
               ) : !canReadContent ? (
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 py-2">
-                  <Lock className="h-3.5 w-3.5 text-slate-400" />
+                <div className="flex items-center gap-1.5 text-xs text-[#71717A] py-2">
+                  <Lock className="h-3.5 w-3.5 text-[#71717A]" />
                   <span>Requires content:review</span>
                 </div>
               ) : (
-                <div className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+                <div className="text-2xl font-bold tracking-tight text-[#ECECEC] flex items-center gap-2">
                   <span>{stats?.pendingReviews ?? '—'}</span>
                   {stats && stats.pendingReviews !== null && stats.pendingReviews > 0 && (
-                    <span className="text-xs font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
+                    <span className="text-xs font-semibold text-[#F59E0B] bg-[#F59E0B]/15 border border-[#F59E0B]/30 rounded px-2 py-0.2">
                       Needs Action
                     </span>
                   )}
                 </div>
               )}
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-[#71717A]">
                 Submissions awaiting human reviewer approval
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="mt-4 pt-3 border-t border-[#424242] flex items-center justify-between text-xs">
               {canReadContent ? (
                 <Link
-                  to="/compliance-review"
-                  className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300 font-medium"
+                  to="/approvals"
+                  className="inline-flex items-center gap-1 text-[#F59E0B] hover:underline font-medium"
                 >
                   <span>Review Submissions</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               ) : (
-                <span className="text-[11px] text-slate-600">Restricted role</span>
+                <span className="text-[11px] text-[#71717A]">Restricted role</span>
               )}
             </div>
           </div>
 
           {/* Card 3: Approved Content */}
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 flex flex-col justify-between hover:border-slate-700/80 transition">
+          <div className="rounded-lg border border-[#424242] bg-[#212121] p-4 flex flex-col justify-between hover:border-[#71717A] transition">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wider">
                 Approved Content
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-[#2F2F2F] text-[#10A37F] border border-[#424242]">
                 <Award className="h-4 w-4" />
               </div>
             </div>
             <div className="mt-4">
               {statsLoading && !stats ? (
-                <div className="h-8 w-20 animate-pulse rounded bg-slate-800" />
+                <div className="h-8 w-20 animate-pulse rounded bg-[#2F2F2F]" />
               ) : !canReadContent ? (
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 py-2">
-                  <Lock className="h-3.5 w-3.5 text-slate-400" />
+                <div className="flex items-center gap-1.5 text-xs text-[#71717A] py-2">
+                  <Lock className="h-3.5 w-3.5 text-[#71717A]" />
                   <span>Requires content:review</span>
                 </div>
               ) : (
-                <div className="text-3xl font-bold tracking-tight text-white">
+                <div className="text-2xl font-bold tracking-tight text-[#ECECEC]">
                   {stats?.approvedContent ?? '—'}
                 </div>
               )}
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-[#71717A]">
                 Revisions approved by authorized reviewer
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="mt-4 pt-3 border-t border-[#424242] flex items-center justify-between text-xs">
               {canReadContent ? (
                 <Link
-                  to="/compliance-review"
-                  className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 font-medium"
+                  to="/approvals"
+                  className="inline-flex items-center gap-1 text-[#10A37F] hover:underline font-medium"
                 >
                   <span>Filter Approved</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               ) : (
-                <span className="text-[11px] text-slate-600">Restricted role</span>
+                <span className="text-[11px] text-[#71717A]">Restricted role</span>
               )}
             </div>
           </div>
 
           {/* Card 4: Active Brand Kits */}
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5 flex flex-col justify-between hover:border-slate-700/80 transition">
+          <div className="rounded-lg border border-[#424242] bg-[#212121] p-4 flex flex-col justify-between hover:border-[#71717A] transition">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wider">
                 Active Brand Kits
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-[#2F2F2F] text-[#ECECEC] border border-[#424242]">
                 <BookOpen className="h-4 w-4" />
               </div>
             </div>
             <div className="mt-4">
               {statsLoading && !stats ? (
-                <div className="h-8 w-20 animate-pulse rounded bg-slate-800" />
+                <div className="h-8 w-20 animate-pulse rounded bg-[#2F2F2F]" />
               ) : !canReadBrand ? (
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 py-2">
-                  <Lock className="h-3.5 w-3.5 text-slate-400" />
+                <div className="flex items-center gap-1.5 text-xs text-[#71717A] py-2">
+                  <Lock className="h-3.5 w-3.5 text-[#71717A]" />
                   <span>Requires brand:read</span>
                 </div>
               ) : (
-                <div className="text-3xl font-bold tracking-tight text-white">
+                <div className="text-2xl font-bold tracking-tight text-[#ECECEC]">
                   {stats?.activeBrandKits ?? '—'}
                 </div>
               )}
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-[#71717A]">
                 Configured brand kits with active versions
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="mt-4 pt-3 border-t border-[#424242] flex items-center justify-between text-xs">
               {canReadBrand ? (
                 <Link
                   to="/brand-hub"
-                  className="inline-flex items-center gap-1 text-purple-400 hover:text-purple-300 font-medium"
+                  className="inline-flex items-center gap-1 text-[#ECECEC] hover:text-[#10A37F] font-medium transition-colors"
                 >
                   <span>Manage Brand Kits</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               ) : (
-                <span className="text-[11px] text-slate-600">Restricted role</span>
+                <span className="text-[11px] text-[#71717A]">Restricted role</span>
               )}
             </div>
           </div>
         </div>
 
-        {/* Empty State Banner when no content or kits have been created */}
+        {/* Empty State Banner */}
         {isStatsEmpty && !statsLoading && (
-          <div className="mt-6 rounded-xl border border-dashed border-slate-800 bg-slate-950/40 p-6 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-400">
-              <BookOpen className="h-6 w-6" />
+          <div className="mt-6 rounded-lg border border-dashed border-[#424242] bg-[#212121] p-6 text-center">
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-[#2F2F2F] text-[#A1A1AA]">
+              <BookOpen className="h-5 w-5" />
             </div>
-            <h4 className="mt-3 text-sm font-semibold text-white">Workspace Initialized — No Data Yet</h4>
-            <p className="mt-1 text-xs text-slate-400 max-w-md mx-auto">
+            <h4 className="mt-3 text-sm font-semibold text-[#ECECEC]">Workspace Initialized — No Data Yet</h4>
+            <p className="mt-1 text-xs text-[#A1A1AA] max-w-md mx-auto">
               Get started by creating your first Brand Kit in Brand Hub, or submit copy to run automated
               compliance checks against versioned rules.
             </p>
             <div className="mt-4 flex items-center justify-center gap-3">
               <Link
                 to="/brand-hub"
-                className="rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition"
+                className="rounded-lg bg-[#10A37F] hover:bg-[#0D8F70] px-3.5 py-1.5 text-xs font-semibold text-white transition"
               >
                 Create Brand Kit
               </Link>
               <Link
                 to="/compliance-review"
-                className="rounded-lg border border-slate-700 bg-slate-800 px-3.5 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700 transition"
+                className="rounded-lg border border-[#424242] bg-[#2F2F2F] hover:bg-[#424242] px-3.5 py-1.5 text-xs font-semibold text-[#ECECEC] transition"
               >
                 Submit Content
               </Link>
@@ -523,18 +523,16 @@ export const DashboardHome: React.FC = () => {
         )}
       </section>
 
-      {/* Module Implementation Status & Team Ownership */}
+      {/* Module Implementation Status */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Layers className="h-5 w-5 text-indigo-400" />
-              <span>Phased Architecture & Module Status</span>
-            </h3>
-            <p className="text-xs text-slate-400">
-              Clear separation between implemented platform modules and planned upcoming phases.
-            </p>
-          </div>
+        <div>
+          <h3 className="text-base font-semibold text-[#ECECEC] flex items-center gap-2">
+            <Layers className="h-4 w-4 text-[#10A37F]" />
+            <span>Phased Architecture & Module Status</span>
+          </h3>
+          <p className="text-xs text-[#A1A1AA]">
+            Clear separation between implemented platform modules and planned upcoming phases.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -543,37 +541,33 @@ export const DashboardHome: React.FC = () => {
             return (
               <div
                 key={mod.id}
-                className={`rounded-xl border p-5 flex flex-col justify-between transition ${
-                  isImplemented
-                    ? 'border-emerald-500/40 bg-emerald-950/10'
-                    : 'border-slate-800 bg-slate-900/40 hover:border-slate-700'
-                }`}
+                className="rounded-lg border border-[#424242] bg-[#2F2F2F] p-4 flex flex-col justify-between hover:border-[#71717A] transition"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-indigo-400">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA]">
                       Phase {mod.phase}
                     </span>
                     <span
-                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                      className={`rounded px-2 py-0.5 text-[10px] font-medium ${
                         isImplemented
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          : 'bg-slate-800 text-slate-400 border border-slate-700'
+                          ? 'bg-[#10A37F]/15 text-[#10A37F] border border-[#10A37F]/30'
+                          : 'bg-[#212121] text-[#71717A] border border-[#424242]'
                       }`}
                     >
                       {isImplemented ? 'Implemented' : 'Planned'}
                     </span>
                   </div>
-                  <h4 className="mt-2 text-base font-semibold text-white">{mod.name}</h4>
-                  <p className="mt-1 text-xs text-slate-400 leading-relaxed">{mod.description}</p>
+                  <h4 className="mt-2 text-sm font-semibold text-[#ECECEC]">{mod.name}</h4>
+                  <p className="mt-1 text-xs text-[#A1A1AA] leading-relaxed">{mod.description}</p>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Owner: {mod.owner}</span>
+                <div className="mt-4 pt-3 border-t border-[#424242] flex items-center justify-between text-xs">
+                  <span className="text-[#71717A]">Owner: {mod.owner}</span>
                   {mod.route !== '/' && (
                     <Link
                       to={mod.route}
-                      className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-medium"
+                      className="inline-flex items-center gap-1 text-[#10A37F] hover:underline font-medium"
                     >
                       <span>Inspect</span>
                       <ArrowRight className="h-3 w-3" />
@@ -588,3 +582,5 @@ export const DashboardHome: React.FC = () => {
     </div>
   );
 };
+
+export default DashboardHome;

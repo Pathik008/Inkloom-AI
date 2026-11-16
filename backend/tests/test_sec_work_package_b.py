@@ -279,6 +279,7 @@ async def test_sec05_reviewer_eligibility_and_filtering(test_db):
 async def test_sec05_reviewer_assignment_permissions_and_rbac(test_db):
     """SEC-05: assign_reviewer allows only ADMIN/REVIEWER; rejects BRAND_MANAGER/CONTENT_CREATOR."""
     admin, org, _ = _create_test_user_and_org(test_db, suffix="sec05b", role_name=RoleName.ADMIN)
+    admin2 = _make_member(test_db, org.id, RoleName.ADMIN, prefix="adm2")
     rev = _make_member(test_db, org.id, RoleName.REVIEWER, prefix="rev")
     bm = _make_member(test_db, org.id, RoleName.BRAND_MANAGER, prefix="bm")
     cc = _make_member(test_db, org.id, RoleName.CONTENT_CREATOR, prefix="cc")
@@ -303,14 +304,23 @@ async def test_sec05_reviewer_assignment_permissions_and_rbac(test_db):
         assert r_rev.status_code == 200
         assert r_rev.json()["assigned_reviewer_id"] == str(rev.id)
 
-        # 2. Assigning ADMIN succeeds
+        # 2. Assigning ADMIN succeeds (using a distinct admin to satisfy maker-checker)
         r_adm = await client.post(
+            f"/api/v1/organisations/{org.id}/compliance/submissions/{sub_id}/assign-reviewer",
+            json={"reviewer_id": str(admin2.id)},
+            headers=admin_hdr,
+        )
+        assert r_adm.status_code == 200
+        assert r_adm.json()["assigned_reviewer_id"] == str(admin2.id)
+
+        # 2b. Submitter cannot be assigned as reviewer (even if holding ADMIN authority)
+        r_self = await client.post(
             f"/api/v1/organisations/{org.id}/compliance/submissions/{sub_id}/assign-reviewer",
             json={"reviewer_id": str(admin.id)},
             headers=admin_hdr,
         )
-        assert r_adm.status_code == 200
-        assert r_adm.json()["assigned_reviewer_id"] == str(admin.id)
+        assert r_self.status_code == 400
+        assert "Submitter cannot be assigned as the reviewer" in r_self.json()["detail"]
 
         # 3. Assigning BRAND_MANAGER fails with 400 Bad Request
         r_bm = await client.post(

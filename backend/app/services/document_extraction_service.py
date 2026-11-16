@@ -138,7 +138,7 @@ def extract_txt(content: bytes) -> ExtractionResult:
                 method="text/plain-decoder",
                 page_count=1,
                 pages=[{"page_number": 1, "text": text.strip()}],
-                metadata={"encoding": enc},
+                metadata={"encoding": enc, "mime_type": "text/plain"},
             )
         except UnicodeDecodeError:
             continue
@@ -182,12 +182,13 @@ def extract_pdf(content: bytes) -> ExtractionResult:
             "title": reader.metadata.title if reader.metadata else None,
             "author": reader.metadata.author if reader.metadata else None,
             "creator": reader.metadata.creator if reader.metadata else None,
+            "mime_type": "application/pdf",
         }
 
         # If zero text extracted, check for OCR fallback
         ocr_fallback = False
         if not full_text:
-            ocr_text = try_ocr_pdf_fallback(reader)
+            ocr_text = try_ocr_pdf_fallback(reader, pages_out=pages_out)
             if ocr_text:
                 full_text = ocr_text
                 ocr_fallback = True
@@ -207,7 +208,7 @@ def extract_pdf(content: bytes) -> ExtractionResult:
         raise ExtractionError(f"PDF extraction error: {str(exc)}") from exc
 
 
-def try_ocr_pdf_fallback(reader: Any) -> str:
+def try_ocr_pdf_fallback(reader: Any, pages_out: list[dict[str, Any]] | None = None) -> str:
     """Attempt OCR extraction on embedded raster images in scanned PDFs with image count limits (SEC-04)."""
     try:
         import pytesseract
@@ -220,8 +221,9 @@ def try_ocr_pdf_fallback(reader: Any) -> str:
                 f"Scanned PDF contains {total_images} images requiring OCR, exceeding maximum limit of {MAX_OCR_IMAGES_PER_DOCUMENT}."
             )
 
-        text_parts = []
-        for page in reader.pages:
+        page_texts: list[str] = []
+        for page_idx, page in enumerate(reader.pages, start=1):
+            page_parts: list[str] = []
             for image_file in page.images:
                 try:
                     pil_img = Image.open(io.BytesIO(image_file.data))
@@ -231,12 +233,26 @@ def try_ocr_pdf_fallback(reader: Any) -> str:
                         )
                     ocr_result = pytesseract.image_to_string(pil_img, timeout=OCR_TIMEOUT_SECONDS)
                     if ocr_result.strip():
-                        text_parts.append(ocr_result.strip())
+                        page_parts.append(ocr_result.strip())
                 except ExtractionError:
                     raise
                 except Exception:
                     continue
-        return "\n\n".join(text_parts).strip()
+
+            page_combined = "\n\n".join(page_parts).strip()
+            if page_combined:
+                page_texts.append(page_combined)
+
+            if pages_out is not None:
+                if page_idx - 1 < len(pages_out):
+                    pages_out[page_idx - 1]["text"] = page_combined
+                else:
+                    pages_out.append({
+                        "page_number": page_idx,
+                        "text": page_combined,
+                    })
+
+        return "\n\n".join(page_texts).strip()
     except ExtractionError:
         raise
     except Exception:
@@ -318,7 +334,11 @@ def extract_docx(content: bytes) -> ExtractionResult:
             method="python-docx-parser",
             page_count=1,
             pages=[{"page_number": 1, "text": full_text}],
-            metadata={"paragraphs_count": len(doc.paragraphs), "tables_count": len(doc.tables)},
+            metadata={
+                "paragraphs_count": len(doc.paragraphs),
+                "tables_count": len(doc.tables),
+                "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            },
         )
     except Exception as exc:
         if isinstance(exc, ExtractionError):
@@ -341,11 +361,13 @@ def extract_image_ocr(content: bytes, ext: str) -> ExtractionResult:
                 f"Image dimension {pil_img.width}x{pil_img.height} ({total_pixels} pixels) exceeds maximum limit of {MAX_IMAGE_PIXELS} pixels."
             )
 
+        detected_format = pil_img.format or ext.upper().lstrip(".")
         metadata = {
             "width": pil_img.width,
             "height": pil_img.height,
             "mode": pil_img.mode,
-            "format": pil_img.format or ext.upper().lstrip("."),
+            "format": detected_format,
+            "mime_type": "image/png" if detected_format == "PNG" else "image/jpeg",
         }
 
         try:

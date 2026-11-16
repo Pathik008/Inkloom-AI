@@ -1,5 +1,7 @@
 import {
   AuthTokenResponse,
+  BrandDocumentChunk,
+  BrandGuidelineDocument,
   BrandKitSummary,
   ComplianceMetrics,
   ContentSubmissionSummary,
@@ -66,7 +68,7 @@ export async function apiRequest<T>(
     ...(options.headers as Record<string, string> | undefined),
   };
 
-  if (options.body && !headers['Content-Type']) {
+  if (options.body && !headers['Content-Type'] && !(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
   if (token) {
@@ -469,6 +471,113 @@ export async function applySubmissionCorrections(
     `/api/v1/organisations/${organisationId}/compliance/submissions/${submissionId}/apply-corrections`,
     {
       method: 'POST',
+    },
+    organisationId,
+  );
+}
+
+// --- Brand Guideline Documents (Phase 6.1 & 6.2) ---
+
+export async function uploadGuidelineDocument(
+  organisationId: string,
+  brandKitId: string,
+  versionId: string,
+  formData: FormData,
+): Promise<BrandGuidelineDocument> {
+  return apiRequest<BrandGuidelineDocument>(
+    `/api/v1/organisations/${organisationId}/brand-kits/${brandKitId}/versions/${versionId}/documents`,
+    {
+      method: 'POST',
+      body: formData,
+    },
+    organisationId,
+  );
+}
+
+export async function listGuidelineDocuments(
+  organisationId: string,
+  brandKitId: string,
+  versionId: string,
+): Promise<BrandGuidelineDocument[]> {
+  return apiRequest<BrandGuidelineDocument[]>(
+    `/api/v1/organisations/${organisationId}/brand-kits/${brandKitId}/versions/${versionId}/documents`,
+    {
+      method: 'GET',
+    },
+    organisationId,
+  );
+}
+
+export async function getGuidelineDocument(
+  organisationId: string,
+  brandKitId: string,
+  versionId: string,
+  documentId: string,
+): Promise<BrandGuidelineDocument> {
+  return apiRequest<BrandGuidelineDocument>(
+    `/api/v1/organisations/${organisationId}/brand-kits/${brandKitId}/versions/${versionId}/documents/${documentId}`,
+    {
+      method: 'GET',
+    },
+    organisationId,
+  );
+}
+
+export async function deleteGuidelineDocument(
+  organisationId: string,
+  brandKitId: string,
+  versionId: string,
+  documentId: string,
+): Promise<void> {
+  return apiRequest<void>(
+    `/api/v1/organisations/${organisationId}/brand-kits/${brandKitId}/versions/${versionId}/documents/${documentId}`,
+    {
+      method: 'DELETE',
+    },
+    organisationId,
+  );
+}
+
+export async function reparseGuidelineDocument(
+  organisationId: string,
+  brandKitId: string,
+  versionId: string,
+  documentId: string,
+): Promise<BrandGuidelineDocument> {
+  return apiRequest<BrandGuidelineDocument>(
+    `/api/v1/organisations/${organisationId}/brand-kits/${brandKitId}/versions/${versionId}/documents/${documentId}/reparse`,
+    {
+      method: 'POST',
+    },
+    organisationId,
+  );
+}
+
+export async function triggerGuidelineDocumentEmbedding(
+  organisationId: string,
+  brandKitId: string,
+  versionId: string,
+  documentId: string,
+): Promise<BrandGuidelineDocument> {
+  return apiRequest<BrandGuidelineDocument>(
+    `/api/v1/organisations/${organisationId}/brand-kits/${brandKitId}/versions/${versionId}/documents/${documentId}/embed`,
+    {
+      method: 'POST',
+    },
+    organisationId,
+  );
+}
+
+export async function listGuidelineDocumentChunks(
+  organisationId: string,
+  brandKitId: string,
+  versionId: string,
+  documentId: string,
+): Promise<BrandDocumentChunk[]> {
+  return apiRequest<BrandDocumentChunk[]>(
+    `/api/v1/organisations/${organisationId}/brand-kits/${brandKitId}/versions/${versionId}/documents/${documentId}/chunks`,
+    {
+      method: 'GET',
     },
     organisationId,
   );

@@ -38,8 +38,17 @@ from app.services import brand_kit_service
 from app.services import document_extraction_service as doc_service
 from app.services.rag import chunking_service
 
-# Allowed guideline document extensions (text-heavy policy documents)
-ALLOWED_GUIDELINE_EXTENSIONS = {".pdf", ".docx", ".txt"}
+# Allowed guideline document extensions (text-heavy policy documents and image guidelines)
+ALLOWED_GUIDELINE_EXTENSIONS = {".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"}
+ALLOWED_GUIDELINE_MIME_TYPES = {
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+    "image/png",
+    "image/jpeg",
+    "image/pjpeg",
+    "application/octet-stream",
+}
 
 
 def document_to_response(doc: BrandGuidelineDocument) -> BrandGuidelineDocumentResponse:
@@ -152,7 +161,7 @@ async def upload_guideline_document(
             detail=f"Invalid document category '{document_category}'. Allowed categories: {', '.join(GuidelineDocumentCategory.ALL)}.",
         )
 
-    # 2. Extension pre-validation
+    # 2. Extension & MIME pre-validation
     raw_filename = file.filename or "guideline_document"
     ext = os.path.splitext(raw_filename.lower())[1]
     if ext not in ALLOWED_GUIDELINE_EXTENSIONS:
@@ -160,6 +169,14 @@ async def upload_guideline_document(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Unsupported guideline format '{ext}'. Allowed extensions: {', '.join(sorted(ALLOWED_GUIDELINE_EXTENSIONS))}.",
         )
+
+    if file.content_type:
+        normalized_mime = file.content_type.split(";")[0].strip().lower()
+        if normalized_mime not in ALLOWED_GUIDELINE_MIME_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail=f"Unsupported MIME type '{file.content_type}'.",
+            )
 
     # 3. Bounded chunked streaming read (SEC-02 10MB limit)
     chunks: list[bytes] = []

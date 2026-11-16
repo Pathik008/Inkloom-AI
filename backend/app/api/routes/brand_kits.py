@@ -373,7 +373,7 @@ def set_active_version_path(
 async def upload_guideline_document(
     brand_kit_id: uuid.UUID,
     version_id: uuid.UUID,
-    file: UploadFile = File(..., description="Guideline document (PDF, DOCX, TXT) max 10MB"),
+    file: UploadFile = File(..., description="Guideline document (PDF, DOCX, TXT, PNG, JPG, JPEG) max 10MB"),
     title: str | None = Form(default=None, description="Display title for guideline document"),
     document_category: str = Form(
         default=GuidelineDocumentCategory.STYLE_GUIDE,

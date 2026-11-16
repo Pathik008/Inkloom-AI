@@ -73,6 +73,9 @@ export const App: React.FC = () => {
                     phase="Phase 7"
                     owner="Pragati Kumari"
                     summary="Inspect highlighted violations, apply evidence-backed suggested corrections, compare revisions, and re-run compliance checks."
+                    integratedDestinationUrl="/compliance-review"
+                    integratedDestinationLabel="Compliance Review Workbench"
+                    integratedDestinationNote="Interactive violation highlighting, 1-click suggested corrections, diff comparison, and revision creation are integrated inside Compliance Review."
                     deliverables={[
                       'Inline violation highlighting mapped to exact character spans',
                       'One-click application of recommended corrections',
@@ -100,6 +103,9 @@ export const App: React.FC = () => {
                     phase="Phase 8"
                     owner="Pathik Talwar"
                     summary="Immutable audit trail recording actor, organisation, action, target resource, and version deltas across the platform."
+                    integratedDestinationUrl="/approvals"
+                    integratedDestinationLabel="Approval Inbox & History"
+                    integratedDestinationNote="Review decisions, maker-checker audit events, revision lineages, and timestamped actions are tracked across the Approval Inbox and Compliance Workbench."
                     deliverables={[
                       'Append-only audit records for auth, Brand Kit publication, reviews, and approvals',
                       'Tenant-scoped audit querying for Organisation Admins',

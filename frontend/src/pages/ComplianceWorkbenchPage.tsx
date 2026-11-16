@@ -124,35 +124,35 @@ interface Kit {
 }
 
 const SEV_COLOUR: Record<string, string> = {
-  CRITICAL: 'bg-rose-500/20 text-rose-300 border border-rose-500/40',
-  HIGH: 'bg-orange-500/20 text-orange-300 border border-orange-500/40',
-  MEDIUM: 'bg-amber-500/20 text-amber-300 border border-amber-500/40',
-  LOW: 'bg-sky-500/20 text-sky-300 border border-sky-500/40',
-  INFO: 'bg-slate-500/20 text-slate-300 border border-slate-500/40',
-  WARNING: 'bg-amber-500/20 text-amber-300 border border-amber-500/40',
-  SUGGESTION: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40',
+  CRITICAL: 'bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/40',
+  HIGH: 'bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/40',
+  MEDIUM: 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/40',
+  LOW: 'bg-[#38BDF8]/15 text-[#38BDF8] border border-[#38BDF8]/40',
+  INFO: 'bg-[#71717A]/20 text-[#A1A1AA] border border-[#424242]',
+  WARNING: 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/40',
+  SUGGESTION: 'bg-[#10A37F]/15 text-[#10A37F] border border-[#10A37F]/40',
 };
 
 const STATUS_COLOUR: Record<string, string> = {
-  APPROVED: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
-  PENDING_REVIEW: 'bg-amber-500/20 text-amber-300 border border-amber-500/40',
-  CHANGES_REQUESTED: 'bg-orange-500/20 text-orange-300 border border-orange-500/40',
-  REJECTED: 'bg-rose-500/20 text-rose-300 border border-rose-500/40',
-  DRAFT: 'bg-slate-500/20 text-slate-300 border border-slate-500/40',
+  APPROVED: 'bg-[#10A37F]/15 text-[#10A37F] border border-[#10A37F]/40',
+  PENDING_REVIEW: 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/40',
+  CHANGES_REQUESTED: 'bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/40',
+  REJECTED: 'bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/40',
+  DRAFT: 'bg-[#212121] text-[#A1A1AA] border border-[#424242]',
 };
 
 const MARK_COLOUR: Record<string, string> = {
-  CRITICAL: 'bg-rose-500/40 text-white font-medium border-b-2 border-rose-400',
-  HIGH: 'bg-orange-500/40 text-white font-medium border-b-2 border-orange-400',
-  MEDIUM: 'bg-amber-500/40 text-white font-medium border-b-2 border-amber-400',
-  LOW: 'bg-sky-500/40 text-white font-medium border-b-2 border-sky-400',
-  INFO: 'bg-slate-500/40 text-white font-medium',
-  WARNING: 'bg-amber-500/40 text-white font-medium border-b-2 border-amber-400',
-  SUGGESTION: 'bg-indigo-500/40 text-white font-medium',
+  CRITICAL: 'bg-[#EF4444]/25 text-[#ECECEC] font-medium border-b-2 border-[#EF4444]',
+  HIGH: 'bg-[#F97316]/25 text-[#ECECEC] font-medium border-b-2 border-[#F97316]',
+  MEDIUM: 'bg-[#F59E0B]/25 text-[#ECECEC] font-medium border-b-2 border-[#F59E0B]',
+  LOW: 'bg-[#38BDF8]/25 text-[#ECECEC] font-medium border-b-2 border-[#38BDF8]',
+  INFO: 'bg-[#424242] text-[#ECECEC] font-medium',
+  WARNING: 'bg-[#F59E0B]/25 text-[#ECECEC] font-medium border-b-2 border-[#F59E0B]',
+  SUGGESTION: 'bg-[#10A37F]/25 text-[#ECECEC] font-medium border-b-2 border-[#10A37F]',
 };
 
 const input =
-  'w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none';
+  'w-full rounded-lg bg-[#212121] border border-[#424242] px-3.5 py-2 text-xs text-[#ECECEC] placeholder-[#71717A] focus:border-[#10A37F] focus:outline-none transition';
 
 const DEMO_VIOLATION_SAMPLE =
   'Welcome to the new investment fund. We offer guaranteed returns and a 100% risk-free portfolio for all retail investors. Start investing today!';
@@ -176,7 +176,7 @@ const HighlightedText: React.FC<{ text: string; findings: ComplianceFinding[] }>
       <mark
         key={f.id || f.finding_id || `span-${idx}`}
         title={`${f.rule_code}: ${f.explanation}`}
-        className={`rounded px-1.5 py-0.5 ${MARK_COLOUR[f.severity] ?? 'bg-indigo-500/30 text-white'}`}
+        className={`rounded px-1.5 py-0.5 ${MARK_COLOUR[f.severity] ?? 'bg-[#10A37F]/25 text-[#ECECEC]'}`}
       >
         {text.slice(s, e)}
       </mark>,
@@ -185,7 +185,7 @@ const HighlightedText: React.FC<{ text: string; findings: ComplianceFinding[] }>
   });
   parts.push(text.slice(cursor));
   return (
-    <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200 font-mono bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+    <div className="whitespace-pre-wrap text-xs md:text-sm leading-relaxed text-[#ECECEC] font-mono bg-[#212121] p-4 rounded-xl border border-[#424242]">
       {parts}
     </div>
   );
@@ -347,15 +347,15 @@ export const ComplianceWorkbenchPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-300 mb-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#10A37F]/30 bg-[#10A37F]/10 px-3 py-0.5 text-xs font-semibold text-[#10A37F] mb-2">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Phase 6 Compliance Review Workbench</span>
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <FileCheck2 className="h-7 w-7 text-indigo-400" />
+          <h1 className="text-xl font-semibold text-[#ECECEC] tracking-tight flex items-center gap-2.5">
+            <FileCheck2 className="h-6 w-6 text-[#10A37F]" />
             <span>Compliance Review & Evidence Workbench</span>
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-xs text-[#A1A1AA] mt-1">
             Authoritative deterministic rule validation, tenant-isolated vector retrieval, evidence citations, and human approval queue.
           </p>
         </div>
@@ -368,9 +368,9 @@ export const ComplianceWorkbenchPage: React.FC = () => {
               setTitle('Acme Wealth Banned Phrase Demo');
               setAnalysisMode('deterministic');
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-3 py-1.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-500/20 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#424242] bg-[#2F2F2F] px-3 py-1.5 text-xs font-medium text-[#ECECEC] hover:bg-[#424242] transition-colors"
           >
-            <ShieldAlert className="h-3.5 w-3.5" />
+            <ShieldAlert className="h-3.5 w-3.5 text-[#F59E0B]" />
             <span>Banned Term Sample</span>
           </button>
 
@@ -380,7 +380,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
               setTitle('Acme RAG Grounding & Unverified Guard Demo');
               setAnalysisMode('hybrid');
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#10A37F]/40 bg-[#10A37F]/10 px-3 py-1.5 text-xs font-semibold text-[#10A37F] hover:bg-[#10A37F]/20 transition-colors"
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span>Hybrid RAG Sample</span>
@@ -390,16 +390,16 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
       {/* Global Error Banner with Retry */}
       {error && (
-        <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-200 flex flex-wrap items-center justify-between gap-3">
+        <div className="rounded-lg border border-[#EF4444]/40 bg-[#EF4444]/10 p-3.5 text-xs text-[#EF4444] flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <XCircle className="h-5 w-5 text-rose-400 shrink-0" />
+            <XCircle className="h-4 w-4 text-[#EF4444] shrink-0" />
             <span>{error}</span>
           </div>
           <button
             onClick={handleRunAnalysis}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600/30 border border-rose-500/40 px-3 py-1 text-xs font-semibold text-rose-200 hover:bg-rose-600/40 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-md bg-[#EF4444]/20 border border-[#EF4444]/40 px-2.5 py-1 text-xs font-semibold text-[#EF4444] hover:bg-[#EF4444]/30 transition-colors"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className="h-3 w-3" />
             <span>Retry Analysis</span>
           </button>
         </div>
@@ -407,24 +407,24 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
       {/* Global Notice Banner */}
       {notice && (
-        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-emerald-200 flex items-start gap-3">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+        <div className="rounded-lg border border-[#10A37F]/40 bg-[#10A37F]/10 p-3.5 text-xs text-[#10A37F] flex items-start gap-3">
+          <CheckCircle2 className="h-4 w-4 text-[#10A37F] shrink-0 mt-0.5" />
           <span>{notice}</span>
         </div>
       )}
 
       {/* Queue Filter Bar & Submission History */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Queue:</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#424242] pb-3">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wider mr-1">Queue:</span>
           {(['ALL', 'PENDING_REVIEW', 'APPROVED', 'CHANGES_REQUESTED'] as const).map((filter) => (
             <button
               key={filter}
               onClick={() => setStatusFilter(filter)}
-              className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                 statusFilter === filter
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                  ? 'bg-[#424242] text-[#ECECEC]'
+                  : 'bg-[#212121] text-[#A1A1AA] hover:bg-[#2F2F2F] hover:text-[#ECECEC]'
               }`}
             >
               {filter === 'ALL'
@@ -440,10 +440,10 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
         {/* History selector */}
         <div className="flex items-center gap-2 min-w-[300px]">
-          <History className="h-4 w-4 text-slate-400" />
+          <History className="h-4 w-4 text-[#71717A]" />
           <select
             id="compliance-history-select"
-            className={`${input} py-1.5 text-xs`}
+            className={`${input} py-1 text-xs`}
             value={current?.id ?? ''}
             onChange={async (e) => {
               if (!e.target.value) return;
@@ -471,8 +471,8 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
       {/* Revision Lineage Bar */}
       {current?.all_revisions && current.all_revisions.length > 1 && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3.5 flex flex-wrap items-center gap-3">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Revisions:</span>
+        <div className="rounded-xl border border-[#424242] bg-[#2F2F2F] p-3 flex flex-wrap items-center gap-2.5">
+          <span className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wider">Revisions:</span>
           {current.all_revisions.map((rev) => (
             <button
               key={rev.id}
@@ -487,27 +487,27 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                   setBusy(false);
                 }
               }}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                 rev.id === current.id
-                  ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 shadow-md'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  ? 'bg-[#424242] text-[#ECECEC] ring-1 ring-[#10A37F]'
+                  : 'bg-[#212121] text-[#A1A1AA] hover:bg-[#424242]'
               }`}
             >
               <span>Revision {rev.revision_number}</span>
               <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${STATUS_COLOUR[rev.status] ?? ''}`}>
                 {rev.status}
               </span>
-              {rev.score !== null && <span className="text-slate-400 font-mono">({rev.score}/100)</span>}
+              {rev.score !== null && <span className="text-[#A1A1AA] font-mono">({rev.score}/100)</span>}
             </button>
           ))}
         </div>
       )}
 
       {/* Analysis Configuration & Input Card */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4 shadow-xl">
+      <div className="rounded-xl border border-[#424242] bg-[#2F2F2F] p-5 space-y-4 shadow-sm">
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Target Brand Kit</label>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wider">Target Brand Kit</label>
             <select
               id="compliance-kit-select"
               className={input}
@@ -523,8 +523,8 @@ export const ComplianceWorkbenchPage: React.FC = () => {
             </select>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wider">
               Campaign / Submission Title
             </label>
             <input
@@ -537,18 +537,18 @@ export const ComplianceWorkbenchPage: React.FC = () => {
         </div>
 
         {/* Execution Mode Selector */}
-        <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4 space-y-2">
+        <div className="rounded-lg border border-[#424242] bg-[#212121] p-3.5 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Cpu className="h-4 w-4 text-indigo-400" />
+            <span className="text-xs font-medium text-[#ECECEC] uppercase tracking-wider flex items-center gap-1.5">
+              <Cpu className="h-3.5 w-3.5 text-[#10A37F]" />
               <span>Analysis Mode Selection</span>
             </span>
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-400 hover:text-slate-200">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-[#A1A1AA] hover:text-[#ECECEC]">
               <input
                 type="checkbox"
                 checked={includeExperimentalScore}
                 onChange={(e) => setIncludeExperimentalScore(e.target.checked)}
-                className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-[#424242] bg-[#2F2F2F] text-[#10A37F] focus:ring-[#10A37F]"
               />
               <span>Include Experimental Semantic Penalty in Telemetry</span>
             </label>
@@ -558,28 +558,28 @@ export const ComplianceWorkbenchPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setAnalysisMode('hybrid')}
-              className={`p-3.5 rounded-xl border text-left transition-all ${
+              className={`p-3 rounded-lg border text-left transition-colors ${
                 analysisMode === 'hybrid'
-                  ? 'border-indigo-500 bg-indigo-950/30 ring-1 ring-indigo-500'
-                  : 'border-slate-800 bg-slate-900/40 hover:border-slate-700'
+                  ? 'border-[#10A37F] bg-[#10A37F]/10'
+                  : 'border-[#424242] bg-[#2F2F2F] hover:bg-[#424242]/30'
               }`}
             >
               <div className="flex items-center gap-2">
                 <Sparkles
-                  className={`h-4 w-4 ${analysisMode === 'hybrid' ? 'text-indigo-400' : 'text-slate-400'}`}
+                  className={`h-4 w-4 ${analysisMode === 'hybrid' ? 'text-[#10A37F]' : 'text-[#71717A]'}`}
                 />
                 <span
-                  className={`text-xs font-bold ${
-                    analysisMode === 'hybrid' ? 'text-white' : 'text-slate-300'
+                  className={`text-xs font-semibold ${
+                    analysisMode === 'hybrid' ? 'text-[#ECECEC]' : 'text-[#A1A1AA]'
                   }`}
                 >
                   Hybrid Review (Rules + Vector RAG)
                 </span>
-                <span className="ml-auto text-[10px] font-semibold uppercase bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded">
+                <span className="ml-auto text-[9px] font-semibold uppercase bg-[#10A37F]/15 text-[#10A37F] border border-[#10A37F]/30 px-1.5 py-0.2 rounded">
                   Recommended
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+              <p className="text-[11px] text-[#A1A1AA] mt-1 leading-relaxed">
                 Runs 11-stage LangGraph workflow: deterministic rule gate, claim extraction, 1024-dim guideline chunk retrieval, fact verification, brand voice audit, and strict Unverified Guard.
               </p>
             </button>
@@ -587,30 +587,30 @@ export const ComplianceWorkbenchPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setAnalysisMode('deterministic')}
-              className={`p-3.5 rounded-xl border text-left transition-all ${
+              className={`p-3 rounded-lg border text-left transition-colors ${
                 analysisMode === 'deterministic'
-                  ? 'border-indigo-500 bg-indigo-950/30 ring-1 ring-indigo-500'
-                  : 'border-slate-800 bg-slate-900/40 hover:border-slate-700'
+                  ? 'border-[#10A37F] bg-[#10A37F]/10'
+                  : 'border-[#424242] bg-[#2F2F2F] hover:bg-[#424242]/30'
               }`}
             >
               <div className="flex items-center gap-2">
                 <ShieldCheck
                   className={`h-4 w-4 ${
-                    analysisMode === 'deterministic' ? 'text-indigo-400' : 'text-slate-400'
+                    analysisMode === 'deterministic' ? 'text-[#10A37F]' : 'text-[#71717A]'
                   }`}
                 />
                 <span
-                  className={`text-xs font-bold ${
-                    analysisMode === 'deterministic' ? 'text-white' : 'text-slate-300'
+                  className={`text-xs font-semibold ${
+                    analysisMode === 'deterministic' ? 'text-[#ECECEC]' : 'text-[#A1A1AA]'
                   }`}
                 >
                   Deterministic Engine Only
                 </span>
-                <span className="ml-auto text-[10px] font-semibold uppercase bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
+                <span className="ml-auto text-[9px] font-semibold uppercase bg-[#212121] text-[#71717A] border border-[#424242] px-1.5 py-0.2 rounded">
                   Fast
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+              <p className="text-[11px] text-[#A1A1AA] mt-1 leading-relaxed">
                 Strict rule-based compliance check: banned phrases, required disclaimers, terminology, and approved pricing facts. Zero AI calls or external latencies.
               </p>
             </button>
@@ -618,17 +618,17 @@ export const ComplianceWorkbenchPage: React.FC = () => {
         </div>
 
         {/* Marketing Copy Textarea */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <label className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wider">
               Marketing Content Copy
             </label>
-            <span className="text-[11px] text-slate-500 font-mono">
+            <span className="text-[11px] text-[#71717A] font-mono">
               {text.length.toLocaleString()} / 50,000 characters
             </span>
           </div>
           <textarea
-            className={`${input} h-40 font-mono text-xs md:text-sm`}
+            className={`${input} h-36 font-mono text-xs`}
             placeholder="Paste or write marketing text here to run compliance and guideline verification..."
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -636,15 +636,15 @@ export const ComplianceWorkbenchPage: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <div className="flex flex-wrap items-center gap-2.5">
             {canSubmit && (
               <button
                 disabled={busy || !kitId || !text.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 disabled:opacity-50 transition-all"
+                className="inline-flex items-center gap-2 rounded-lg bg-[#10A37F] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0D8F70] disabled:opacity-50 transition-colors"
                 onClick={handleRunAnalysis}
               >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileCheck2 className="h-3.5 w-3.5" />}
                 <span>
                   {analysisMode === 'hybrid' ? 'Run Hybrid AI Analysis' : 'Run Deterministic Analysis'}
                 </span>
@@ -654,7 +654,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
             {canSubmit && current && (
               <button
                 disabled={busy || !text.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-slate-800 border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-700 disabled:opacity-50 transition-all"
+                className="inline-flex items-center gap-2 rounded-lg border border-[#424242] bg-[#2F2F2F] px-4 py-2 text-xs font-semibold text-[#ECECEC] hover:bg-[#424242] disabled:opacity-50 transition-colors"
                 onClick={() =>
                   call(
                     () =>
@@ -667,7 +667,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                   )
                 }
               >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Clock className="h-3.5 w-3.5" />}
                 <span>Save Edit as New Revision</span>
               </button>
             )}
@@ -742,21 +742,21 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                     <CheckCircle2 className="h-3 w-3" />
                     AI Provider Active
                   </span>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-0.5 rounded-full font-mono">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-[#10A37F]/15 text-[#10A37F] border border-[#10A37F]/30 px-2.5 py-0.5 rounded-full font-mono">
                     {scoring.node_trace?.length ?? 11} Stages
                   </span>
                 </div>
               </div>
 
               {scoring.node_trace && scoring.node_trace.length > 0 && (
-                <div className="pt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-slate-400">
-                  <span className="text-slate-500 font-sans font-semibold">Workflow Trace:</span>
+                <div className="pt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-[#A1A1AA]">
+                  <span className="text-[#71717A] font-sans font-semibold">Workflow Trace:</span>
                   {scoring.node_trace.map((node, i) => (
                     <React.Fragment key={node}>
-                      <span className="bg-slate-900 border border-slate-800 rounded px-1.5 py-0.5 text-slate-300">
+                      <span className="bg-[#212121] border border-[#424242] rounded px-1.5 py-0.5 text-[#ECECEC]">
                         {node}
                       </span>
-                      {i < (scoring.node_trace?.length ?? 0) - 1 && <span className="text-slate-600">→</span>}
+                      {i < (scoring.node_trace?.length ?? 0) - 1 && <span className="text-[#71717A]">→</span>}
                     </React.Fragment>
                   ))}
                 </div>
@@ -765,14 +765,14 @@ export const ComplianceWorkbenchPage: React.FC = () => {
           )}
 
           {scoring.engine_mode === 'DETERMINISTIC' && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-slate-300">
-                <ShieldCheck className="h-4 w-4 text-indigo-400" />
+            <div className="rounded-xl border border-[#424242] bg-[#212121] p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-[#ECECEC]">
+                <ShieldCheck className="h-4 w-4 text-[#10A37F]" />
                 <span>
                   <strong>Deterministic Mode:</strong> Rule pattern matching, price integrity, and disclaimer checks.
                 </span>
               </div>
-              <span className="text-slate-500 font-mono">Pass Threshold: 70/100</span>
+              <span className="text-[#71717A] font-mono">Pass Threshold: 70/100</span>
             </div>
           )}
         </>
@@ -780,15 +780,15 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
       {/* Human Review & Approval Action Cards */}
       {current && (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-5 shadow-xl">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="rounded-xl border border-[#424242] bg-[#2F2F2F] p-5 space-y-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#424242] pb-4">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-semibold text-[#A1A1AA] uppercase tracking-wider">
                 Approval Status:
               </span>
               <span
                 id="submission-status-badge"
-                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-bold uppercase tracking-wider ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider ${
                   STATUS_COLOUR[current.status] ?? STATUS_COLOUR.DRAFT
                 }`}
               >
@@ -800,19 +800,19 @@ export const ComplianceWorkbenchPage: React.FC = () => {
               </span>
 
               {current.assigned_reviewer_name && (
-                <span className="text-xs text-slate-400 flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-lg">
-                  <UserCheck className="h-3.5 w-3.5 text-indigo-400" />
+                <span className="text-xs text-[#A1A1AA] flex items-center gap-1 bg-[#212121] border border-[#424242] px-2.5 py-1 rounded-lg">
+                  <UserCheck className="h-3.5 w-3.5 text-[#10A37F]" />
                   <span>
-                    Assigned: <strong className="text-white">{current.assigned_reviewer_name}</strong>
+                    Assigned: <strong className="text-[#ECECEC]">{current.assigned_reviewer_name}</strong>
                   </span>
                 </span>
               )}
 
               {current.reviewed_by_name && (
-                <span className="text-xs text-slate-400 flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-lg">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="text-xs text-[#A1A1AA] flex items-center gap-1 bg-[#212121] border border-[#424242] px-2.5 py-1 rounded-lg">
+                  <ShieldCheck className="h-3.5 w-3.5 text-[#10A37F]" />
                   <span>
-                    Decided by: <strong className="text-white">{current.reviewed_by_name}</strong>
+                    Decided by: <strong className="text-[#ECECEC]">{current.reviewed_by_name}</strong>
                   </span>
                 </span>
               )}
@@ -825,7 +825,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                   id="btn-submit-for-approval"
                   disabled={busy}
                   onClick={() => setShowSubmitModal(!showSubmitModal)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-md hover:bg-indigo-500 disabled:opacity-50 transition-all"
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#10A37F] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0D8F70] disabled:opacity-50 transition-colors"
                 >
                   <Send className="h-3.5 w-3.5" />
                   <span>
@@ -838,8 +838,8 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
           {/* Submitter note modal / dropdown */}
           {showSubmitModal && (
-            <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-4 space-y-3">
-              <h3 className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">
+            <div className="rounded-lg border border-[#424242] bg-[#212121] p-4 space-y-3">
+              <h3 className="text-xs font-semibold text-[#ECECEC] uppercase tracking-wider">
                 Submit Content for Reviewer Approval
               </h3>
               <div className="grid md:grid-cols-2 gap-3">
@@ -965,7 +965,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                 onChange={(e) => setReviewerComment(e.target.value)}
               />
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <button
                   id="btn-approve-content"
                   disabled={busy || current.submitted_by_user_id === user?.id}
@@ -979,7 +979,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                       'Content approved for publication.',
                     )
                   }
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 shadow-md shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#10A37F] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0D8F70] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   <span>Approve Content</span>
@@ -998,7 +998,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                       'Revisions requested from author.',
                     )
                   }
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-500 shadow-md shadow-amber-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#F59E0B] px-4 py-2 text-xs font-semibold text-white hover:bg-[#D97706] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <RotateCcw className="h-4 w-4" />
                   <span>Request Revisions</span>
@@ -1017,7 +1017,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                       'Content rejected.',
                     )
                   }
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-500 shadow-md shadow-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#EF4444] px-4 py-2 text-xs font-semibold text-white hover:bg-[#DC2626] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <XCircle className="h-4 w-4" />
                   <span>Reject Content</span>
@@ -1036,7 +1036,7 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                       'Comment recorded in discussion trail.',
                     )
                   }
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-700 disabled:opacity-50 transition-colors ml-auto"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#212121] border border-[#424242] px-3 py-2 text-xs font-medium text-[#ECECEC] hover:bg-[#424242] disabled:opacity-50 transition-colors ml-auto"
                 >
                   <MessageSquare className="h-3.5 w-3.5" />
                   <span>Post Note</span>
@@ -1257,14 +1257,14 @@ export const ComplianceWorkbenchPage: React.FC = () => {
               </h2>
 
               {/* Findings Filter */}
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs">
+              <div className="flex items-center gap-1 bg-[#212121] border border-[#424242] p-1 rounded-lg text-xs">
                 <button
                   type="button"
                   onClick={() => setFindingsFilter('ALL')}
-                  className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
                     findingsFilter === 'ALL'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-[#424242] text-[#ECECEC]'
+                      : 'text-[#A1A1AA] hover:text-[#ECECEC]'
                   }`}
                 >
                   All ({analysis.findings.length})
@@ -1272,10 +1272,10 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setFindingsFilter('RULES')}
-                  className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
                     findingsFilter === 'RULES'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-[#424242] text-[#ECECEC]'
+                      : 'text-[#A1A1AA] hover:text-[#ECECEC]'
                   }`}
                 >
                   Rule Violations
@@ -1283,10 +1283,10 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setFindingsFilter('EVIDENCE')}
-                  className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
                     findingsFilter === 'EVIDENCE'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-[#424242] text-[#ECECEC]'
+                      : 'text-[#A1A1AA] hover:text-[#ECECEC]'
                   }`}
                 >
                   Grounded Evidence
@@ -1294,10 +1294,10 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setFindingsFilter('UNVERIFIED')}
-                  className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
                     findingsFilter === 'UNVERIFIED'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-[#424242] text-[#ECECEC]'
+                      : 'text-[#A1A1AA] hover:text-[#ECECEC]'
                   }`}
                 >
                   Unverified Claims
@@ -1306,10 +1306,10 @@ export const ComplianceWorkbenchPage: React.FC = () => {
             </div>
 
             {filteredFindings.length === 0 ? (
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-8 text-center text-slate-400 space-y-2">
-                <CheckCircle2 className="h-8 w-8 mx-auto text-emerald-400" />
-                <p className="text-sm font-semibold text-slate-200">No findings matching the selected filter.</p>
-                <p className="text-xs text-slate-500">All brand rules and guideline boundaries in this category are satisfied.</p>
+              <div className="rounded-xl border border-[#424242] bg-[#2F2F2F] p-8 text-center text-[#A1A1AA] space-y-2">
+                <CheckCircle2 className="h-6 w-6 mx-auto text-[#10A37F]" />
+                <p className="text-sm font-semibold text-[#ECECEC]">No findings matching the selected filter.</p>
+                <p className="text-xs text-[#71717A]">All brand rules and guideline boundaries in this category are satisfied.</p>
               </div>
             ) : (
               filteredFindings.map((f, idx) => {
@@ -1322,39 +1322,39 @@ export const ComplianceWorkbenchPage: React.FC = () => {
                 return (
                   <div
                     key={f.id || f.finding_id || `finding-${idx}`}
-                    className={`rounded-2xl border p-5 space-y-3.5 shadow-md transition-all ${
+                    className={`rounded-xl border p-4 space-y-3 shadow-sm transition-colors ${
                       isUnverified
-                        ? 'border-amber-500/30 bg-amber-950/10'
-                        : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
+                        ? 'border-[#F59E0B]/30 bg-[#2F2F2F]'
+                        : 'border-[#424242] bg-[#2F2F2F] hover:border-[#71717A]'
                     }`}
                   >
                     {/* Header Row */}
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <span
-                          className={`rounded-md px-2.5 py-0.5 text-xs font-bold ${
+                          className={`rounded px-2 py-0.5 text-xs font-semibold ${
                             SEV_COLOUR[f.severity] ?? SEV_COLOUR.INFO
                           }`}
                         >
                           {f.severity}
                         </span>
 
-                        <span className="font-mono text-xs text-indigo-400 font-semibold">
+                        <span className="font-mono text-xs text-[#10A37F] font-semibold">
                           {f.rule_code}
                         </span>
 
-                        <span className="text-sm font-semibold text-white">
+                        <span className="text-sm font-semibold text-[#ECECEC]">
                           {f.rule_title || f.title || 'Compliance Item'}
                         </span>
 
                         {f.kind && (
-                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                          <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-[#212121] text-[#A1A1AA] border border-[#424242]">
                             {f.kind}
                           </span>
                         )}
                       </div>
 
-                      <span className="text-xs text-slate-400 font-mono">
+                      <span className="text-xs text-[#71717A] font-mono">
                         {f.start !== null && f.end !== null
                           ? `Chars ${f.start}–${f.end}`
                           : 'Global Submission Element'}
@@ -1363,28 +1363,28 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
                     {/* Matched Text */}
                     {f.matched_text && (
-                      <div className="text-xs text-slate-300">
-                        <span className="text-slate-400 font-medium">Marketing Copy Excerpt:</span>{' '}
-                        <code className="rounded bg-rose-950/80 border border-rose-800/80 px-2 py-0.5 font-bold text-rose-200">
+                      <div className="text-xs text-[#ECECEC]">
+                        <span className="text-[#A1A1AA] font-medium">Marketing Copy Excerpt:</span>{' '}
+                        <code className="rounded bg-[#EF4444]/15 border border-[#EF4444]/30 px-1.5 py-0.5 font-bold text-[#EF4444]">
                           "{f.matched_text}"
                         </code>
                       </div>
                     )}
 
                     {/* Explanation */}
-                    <p className="text-sm text-slate-300 leading-relaxed">{f.explanation}</p>
+                    <p className="text-xs md:text-sm text-[#ECECEC] leading-relaxed">{f.explanation}</p>
 
                     {/* Unverified Guard Explicit Callout */}
                     {isUnverified && (
-                      <div className="rounded-xl border border-amber-500/40 bg-amber-950/20 p-3.5 space-y-1.5 text-xs">
-                        <div className="flex items-center gap-2 font-bold text-amber-300">
-                          <ShieldAlert className="h-4 w-4 text-amber-400" />
+                      <div className="rounded-lg border border-[#F59E0B]/30 bg-[#212121] p-3 space-y-1 text-xs">
+                        <div className="flex items-center gap-2 font-semibold text-[#F59E0B]">
+                          <ShieldAlert className="h-4 w-4 text-[#F59E0B]" />
                           <span>Unverified Guard Notice</span>
                         </div>
-                        <p className="text-amber-200/90 leading-relaxed">
+                        <p className="text-[#A1A1AA] leading-relaxed">
                           This marketing claim could not be verified against any approved brand guideline document or fact.
                         </p>
-                        <p className="text-[11px] text-amber-300/60">
+                        <p className="text-[11px] text-[#71717A]">
                           To protect against AI hallucination, any non-matching or boundary-violating citations were rejected by the Unverified Guard.
                         </p>
                       </div>
@@ -1392,41 +1392,41 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
                     {/* Evidence Panel (Chunk Citation) */}
                     {hasCitation && f.citation && (
-                      <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-4 space-y-2.5">
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-500/20 pb-2">
+                      <div className="rounded-lg border border-[#424242] bg-[#212121] p-3.5 space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#424242] pb-2">
                           <div className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4 text-indigo-400" />
-                            <span className="text-xs font-bold text-white">
+                            <BookOpen className="h-3.5 w-3.5 text-[#10A37F]" />
+                            <span className="text-xs font-semibold text-[#ECECEC]">
                               {f.citation.document_title}
                             </span>
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
-                            <span className="bg-slate-900 px-2 py-0.5 rounded text-indigo-300 border border-indigo-500/20">
+                            <span className="bg-[#2F2F2F] px-2 py-0.5 rounded text-[#A1A1AA] border border-[#424242]">
                               Chunk: {f.citation.chunk_id.slice(0, 8)}...
                             </span>
                             {f.citation.page_number && (
-                              <span className="bg-slate-900 px-2 py-0.5 rounded text-slate-300 border border-slate-700">
+                              <span className="bg-[#2F2F2F] px-2 py-0.5 rounded text-[#A1A1AA] border border-[#424242]">
                                 Page {f.citation.page_number}
                               </span>
                             )}
                             {f.citation.similarity_score !== undefined && (
-                              <span className="bg-emerald-950 px-2 py-0.5 rounded text-emerald-300 border border-emerald-500/30">
+                              <span className="bg-[#10A37F]/15 px-2 py-0.5 rounded text-[#10A37F] border border-[#10A37F]/30 font-semibold">
                                 {Math.round(f.citation.similarity_score * 100)}% match
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <blockquote className="text-xs italic text-indigo-200/90 bg-slate-950/60 p-3 rounded-lg border border-indigo-500/20 leading-relaxed font-mono">
+                        <blockquote className="text-xs italic text-[#ECECEC] bg-[#2F2F2F] p-2.5 rounded border border-[#424242] leading-relaxed font-mono">
                           "{f.citation.content || f.evidence_excerpt}"
                         </blockquote>
 
                         <div className="flex items-center gap-2 text-[11px]">
-                          <span className="text-slate-400">Grounding Status:</span>
+                          <span className="text-[#71717A]">Grounding Status:</span>
                           <span
                             className={`font-semibold uppercase ${
-                              f.status === 'CONTRADICTED' ? 'text-rose-400' : 'text-emerald-400'
+                              f.status === 'CONTRADICTED' ? 'text-[#EF4444]' : 'text-[#10A37F]'
                             }`}
                           >
                             {f.status || 'VERIFIED'}
@@ -1437,9 +1437,9 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
                     {/* Recommended Action / Correction */}
                     {(f.recommended_correction || f.suggested_replacement) && (
-                      <div className="text-xs text-emerald-300 font-medium bg-emerald-950/30 border border-emerald-800/40 p-3 rounded-xl flex items-center justify-between gap-3">
+                      <div className="text-xs text-[#10A37F] font-medium bg-[#10A37F]/15 border border-[#10A37F]/30 p-2.5 rounded-lg flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                          <CheckCircle2 className="h-4 w-4 text-[#10A37F] shrink-0" />
                           <span>
                             <strong>Suggested Remediation:</strong>{' '}
                             {f.recommended_correction || f.suggested_replacement}
@@ -1455,39 +1455,39 @@ export const ComplianceWorkbenchPage: React.FC = () => {
 
           {/* Unified Diff Comparison */}
           {current.comparison && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4 shadow-xl">
-              <h2 className="text-lg font-bold text-white tracking-tight flex items-center justify-between">
+            <div className="rounded-xl border border-[#424242] bg-[#2F2F2F] p-5 space-y-3.5 shadow-sm">
+              <h2 className="text-base font-semibold text-[#ECECEC] tracking-tight flex items-center justify-between">
                 <span>Revision Comparison (Original vs Corrected)</span>
-                <span className="text-xs text-slate-400 font-normal">
+                <span className="text-xs text-[#A1A1AA] font-normal">
                   Score:{' '}
-                  <span className="text-rose-400 font-semibold">{current.comparison.score_before}</span> →{' '}
-                  <span className="text-emerald-400 font-semibold">{current.comparison.score_after}</span>{' '}
+                  <span className="text-[#EF4444] font-semibold">{current.comparison.score_before}</span> →{' '}
+                  <span className="text-[#10A37F] font-semibold">{current.comparison.score_after}</span>{' '}
                   ({current.comparison.score_delta >= 0 ? `+${current.comparison.score_delta}` : current.comparison.score_delta})
                 </span>
               </h2>
 
-              <div className="flex flex-wrap gap-4 text-xs">
-                <span className="rounded-md bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 text-emerald-300">
+              <div className="flex flex-wrap gap-3 text-xs">
+                <span className="rounded bg-[#10A37F]/15 border border-[#10A37F]/30 px-2.5 py-1 text-[#10A37F] font-medium">
                   Resolved: {current.comparison.resolved_findings.length} violations
                 </span>
-                <span className="rounded-md bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 text-amber-300">
+                <span className="rounded bg-[#F59E0B]/15 border border-[#F59E0B]/30 px-2.5 py-1 text-[#F59E0B] font-medium">
                   Remaining: {current.comparison.remaining_findings.length}
                 </span>
-                <span className="rounded-md bg-rose-500/10 border border-rose-500/30 px-3 py-1.5 text-rose-300">
+                <span className="rounded bg-[#EF4444]/15 border border-[#EF4444]/30 px-2.5 py-1 text-[#EF4444] font-medium">
                   New: {current.comparison.new_findings.length}
                 </span>
               </div>
 
-              <pre className="overflow-x-auto rounded-xl bg-slate-950 p-4 font-mono text-xs leading-5 border border-slate-800">
+              <pre className="overflow-x-auto rounded-lg bg-[#212121] p-3.5 font-mono text-xs leading-5 border border-[#424242]">
                 {current.comparison.text_diff.map((line, i) => (
                   <div
                     key={i}
                     className={
                       line.startsWith('+') && !line.startsWith('+++')
-                        ? 'text-emerald-300 bg-emerald-950/20'
+                        ? 'text-[#10A37F] bg-[#10A37F]/10'
                         : line.startsWith('-') && !line.startsWith('---')
-                        ? 'text-rose-300 bg-rose-950/20'
-                        : 'text-slate-400'
+                        ? 'text-[#EF4444] bg-[#EF4444]/10'
+                        : 'text-[#A1A1AA]'
                     }
                   >
                     {line}

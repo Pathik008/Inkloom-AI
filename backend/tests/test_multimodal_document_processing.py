@@ -872,7 +872,7 @@ def test_cr03_canonical_storage_path_containment_and_traversal_prevention(tmp_pa
     # 2. Directory traversal filenames are sanitized and stay strictly contained
     traversal_filenames = [
         "../../../../etc/passwd",
-        "..\\..\\..\\windows\\system32\\cmd.exe",
+        ("..\\..\\..\\windows\\system32\\cmd.exe" if os.name == "nt" else "../../../windows/system32/cmd.exe"),
         "nested/../../escape.txt",
         "/absolute/root/override.pdf",
     ]

@@ -91,20 +91,20 @@ interface SubmissionDetail {
 type FilterTab = 'ALL' | 'PENDING_REVIEW' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED';
 
 const SEV_BADGE: Record<string, string> = {
-  CRITICAL: 'bg-rose-500/20 text-rose-300 border border-rose-500/40',
-  HIGH: 'bg-orange-500/20 text-orange-300 border border-orange-500/40',
-  MEDIUM: 'bg-amber-500/20 text-amber-300 border border-amber-500/40',
-  LOW: 'bg-sky-500/20 text-sky-300 border border-sky-500/40',
-  INFO: 'bg-slate-500/20 text-slate-300 border border-slate-500/40',
+  CRITICAL: 'bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/40',
+  HIGH: 'bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/40',
+  MEDIUM: 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/40',
+  LOW: 'bg-[#38BDF8]/15 text-[#38BDF8] border border-[#38BDF8]/40',
+  INFO: 'bg-[#71717A]/20 text-[#A1A1AA] border border-[#424242]',
 };
 
 const STATUS_BADGE: Record<string, { label: string; badge: string }> = {
-  PENDING_REVIEW: { label: 'Pending Review', badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
-  UNDER_REVIEW: { label: 'Under Review', badge: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
-  APPROVED: { label: 'Approved', badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
-  REJECTED: { label: 'Rejected', badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
-  CHANGES_REQUESTED: { label: 'Changes Requested', badge: 'bg-orange-500/15 text-orange-300 border-orange-500/30' },
-  DRAFT: { label: 'Draft', badge: 'bg-slate-500/15 text-slate-300 border-slate-500/30' },
+  PENDING_REVIEW: { label: 'Pending Review', badge: 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30' },
+  UNDER_REVIEW: { label: 'Under Review', badge: 'bg-[#38BDF8]/15 text-[#38BDF8] border border-[#38BDF8]/30' },
+  APPROVED: { label: 'Approved', badge: 'bg-[#10A37F]/15 text-[#10A37F] border border-[#10A37F]/30' },
+  REJECTED: { label: 'Rejected', badge: 'bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30' },
+  CHANGES_REQUESTED: { label: 'Changes Requested', badge: 'bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30' },
+  DRAFT: { label: 'Draft', badge: 'bg-[#212121] text-[#A1A1AA] border border-[#424242]' },
 };
 
 export const ApprovalsPage: React.FC = () => {
@@ -198,89 +198,98 @@ export const ApprovalsPage: React.FC = () => {
   // Submit decision (Approve / Reject / Request Changes)
   const executeDecision = async () => {
     if (!activeOrganisationId || !selectedSubId || !confirmAction) return;
+
     setActionBusy(true);
+    setDetailError(null);
     try {
-      const updated = await submitApprovalDecision(activeOrganisationId, selectedSubId, {
-        decision: confirmAction,
-        comments: actionComments.trim() ? actionComments.trim() : null,
-      });
-      setDetail(updated);
-      setActionSuccessNotice(`Submission successfully marked as ${confirmAction}.`);
+      const updated = await submitApprovalDecision(
+        activeOrganisationId,
+        selectedSubId,
+        confirmAction,
+        actionComments.trim() || undefined,
+      );
+
+      setActionSuccessNotice(
+        confirmAction === 'APPROVE'
+          ? 'Content submission successfully approved.'
+          : confirmAction === 'REJECT'
+          ? 'Content submission rejected.'
+          : 'Changes requested from author.',
+      );
+
       setConfirmAction(null);
       setActionComments('');
-      // Refresh the queue in the background
-      void loadQueueData();
+      setDetail(updated as unknown as SubmissionDetail);
+      await loadQueueData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Decision execution failed');
+      setDetailError(err instanceof Error ? err.message : 'Failed to record approval decision.');
     } finally {
       setActionBusy(false);
     }
   };
 
-  // Add Reviewer Comment
+  // Post reviewer note
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeOrganisationId || !selectedSubId || !newComment.trim()) return;
+
     setCommentBusy(true);
     try {
-      const updated = await addReviewComment(activeOrganisationId, selectedSubId, newComment.trim());
-      setDetail(updated);
+      await addReviewComment(activeOrganisationId, selectedSubId, newComment.trim());
       setNewComment('');
+      const updated = await fetchSubmissionDetail(activeOrganisationId, selectedSubId);
+      setDetail(updated);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to add comment');
+      setDetailError(err instanceof Error ? err.message : 'Failed to post review comment.');
     } finally {
       setCommentBusy(false);
     }
   };
 
-  // Client-side search filtering by title, submitter, reviewer, brand kit (SEC-09)
+  // Filter submissions by search query
   const filteredSubmissions = useMemo(() => {
-    let list = submissions;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter((s) => {
-        const titleMatch = s.title.toLowerCase().includes(q);
-        const submitterMatch = (s.submitted_by_name || '').toLowerCase().includes(q);
-        const reviewerMatch = (s.assigned_reviewer_name || s.reviewed_by_name || '').toLowerCase().includes(q);
-        const kitName = (kitMap.get(s.brand_kit_id) || '').toLowerCase();
-        return titleMatch || submitterMatch || reviewerMatch || kitName.includes(q);
-      });
-    }
-    return list;
+    if (!searchQuery.trim()) return submissions;
+    const q = searchQuery.toLowerCase();
+    return submissions.filter((s) => {
+      const titleMatch = s.title.toLowerCase().includes(q);
+      const kitName = (kitMap.get(s.brand_kit_id) || '').toLowerCase();
+      const reviewer = (s.assigned_reviewer_name || s.reviewed_by_name || '').toLowerCase();
+      return titleMatch || kitName.includes(q) || reviewer.includes(q);
+    });
   }, [submissions, searchQuery, kitMap]);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-6">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12">
+      {/* Header Banner */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300 mb-2">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            <span>Human Review & Approval Inbox</span>
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#10A37F]/30 bg-[#10A37F]/10 px-3 py-0.5 text-xs font-semibold text-[#10A37F] mb-2">
+            <UserCheck className="h-3.5 w-3.5" />
+            <span>Maker-Checker Governance Pipeline</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Approvals Queue</h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Review submitted marketing copy, inspect compliance findings with cited evidence, and grant cryptographic approvals.
+          <h1 className="text-xl font-semibold text-[#ECECEC] tracking-tight flex items-center gap-2.5">
+            <FileCheck2 className="h-6 w-6 text-[#10A37F]" />
+            <span>Independent Reviewer Approval Inbox</span>
+          </h1>
+          <p className="text-xs text-[#A1A1AA] mt-1">
+            Review submitted marketing collateral, inspect evidence citations, and record immutable approval or rejection decisions.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => void loadQueueData()}
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-200 hover:bg-slate-800 transition disabled:opacity-50"
-            title="Reload approvals queue"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh Queue</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => void loadQueueData()}
+          disabled={loading}
+          className="inline-flex items-center gap-2 rounded-lg border border-[#424242] bg-[#2F2F2F] hover:bg-[#424242] px-3.5 py-2 text-xs font-medium text-[#ECECEC] transition disabled:opacity-50"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <span>Refresh Queue</span>
+        </button>
       </div>
 
       {/* Filter Tabs & Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2 p-1 rounded-xl bg-slate-900/80 border border-slate-800">
+        <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-lg bg-[#212121] border border-[#424242]">
           {(
             [
               { key: 'ALL', label: 'All Submissions' },
@@ -295,10 +304,10 @@ export const ApprovalsPage: React.FC = () => {
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                 activeTab === tab.key
-                  ? 'bg-indigo-600 text-white shadow'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  ? 'bg-[#424242] text-[#ECECEC]'
+                  : 'text-[#A1A1AA] hover:text-[#ECECEC] hover:bg-[#2F2F2F]'
               }`}
             >
               {tab.label}
@@ -307,20 +316,20 @@ export const ApprovalsPage: React.FC = () => {
         </div>
 
         <div className="relative min-w-[260px]">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#71717A]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by title, brand, or reviewer..."
-            className="w-full rounded-xl bg-slate-900 border border-slate-800 pl-10 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full rounded-lg bg-[#212121] border border-[#424242] pl-9 pr-3.5 py-1.5 text-xs text-[#ECECEC] placeholder-[#71717A] focus:outline-none focus:border-[#10A37F]"
           />
         </div>
       </div>
 
       {/* Error state */}
       {error && (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300 flex items-center justify-between gap-3">
+        <div className="rounded-lg border border-[#EF4444]/30 bg-[#EF4444]/10 p-3.5 text-xs text-[#EF4444] flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
@@ -328,7 +337,7 @@ export const ApprovalsPage: React.FC = () => {
           <button
             type="button"
             onClick={() => void loadQueueData()}
-            className="underline hover:text-rose-100"
+            className="underline hover:text-[#ECECEC]"
           >
             Retry
           </button>
@@ -336,20 +345,20 @@ export const ApprovalsPage: React.FC = () => {
       )}
 
       {/* Queue Table */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden shadow-sm">
+      <div className="rounded-xl border border-[#424242] bg-[#2F2F2F] overflow-hidden shadow-sm">
         {loading ? (
-          <div className="p-8 space-y-4">
+          <div className="p-8 space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-12 w-full animate-pulse rounded-lg bg-slate-800/50" />
+              <div key={i} className="h-10 w-full animate-pulse rounded bg-[#212121]" />
             ))}
           </div>
         ) : filteredSubmissions.length === 0 ? (
-          <div className="py-16 px-6 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-400 mb-3">
-              <FileCheck2 className="h-6 w-6" />
+          <div className="py-14 px-6 text-center">
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-[#212121] text-[#71717A] mb-2.5">
+              <FileCheck2 className="h-5 w-5" />
             </div>
-            <h3 className="text-base font-semibold text-white">No submissions found</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            <h3 className="text-sm font-semibold text-[#ECECEC]">No submissions found</h3>
+            <p className="text-xs text-[#71717A] mt-0.5 max-w-sm mx-auto">
               {searchQuery
                 ? 'No items match your active search query.'
                 : activeTab === 'ALL'
@@ -359,24 +368,24 @@ export const ApprovalsPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="border-b border-slate-800 bg-slate-950/60 uppercase tracking-wider text-[11px] text-slate-400">
+            <table className="w-full text-left text-xs text-[#ECECEC]">
+              <thead className="border-b border-[#424242] bg-[#212121] uppercase tracking-wider text-[10px] text-[#A1A1AA]">
                 <tr>
-                  <th className="py-3.5 px-4 font-semibold">Title & Revision</th>
-                  <th className="py-3.5 px-4 font-semibold">Brand Kit</th>
-                  <th className="py-3.5 px-4 font-semibold">Submitter</th>
-                  <th className="py-3.5 px-4 font-semibold">Compliance Score</th>
-                  <th className="py-3.5 px-4 font-semibold">Status</th>
-                  <th className="py-3.5 px-4 font-semibold">Reviewer</th>
-                  <th className="py-3.5 px-4 font-semibold">Submitted</th>
-                  <th className="py-3.5 px-4 text-right font-semibold">Action</th>
+                  <th className="py-3 px-4 font-semibold">Title & Revision</th>
+                  <th className="py-3 px-4 font-semibold">Brand Kit</th>
+                  <th className="py-3 px-4 font-semibold">Submitter</th>
+                  <th className="py-3 px-4 font-semibold">Compliance Score</th>
+                  <th className="py-3 px-4 font-semibold">Status</th>
+                  <th className="py-3 px-4 font-semibold">Reviewer</th>
+                  <th className="py-3 px-4 font-semibold">Submitted</th>
+                  <th className="py-3 px-4 text-right font-semibold">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-[#424242]/50">
                 {filteredSubmissions.map((sub) => {
                   const statusInfo = STATUS_BADGE[sub.status] || {
                     label: sub.status,
-                    badge: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+                    badge: 'bg-[#212121] text-[#A1A1AA] border border-[#424242]',
                   };
                   const kitName = kitMap.get(sub.brand_kit_id) || 'Primary Brand Kit';
                   const isPass = sub.result === 'PASS';
@@ -384,25 +393,25 @@ export const ApprovalsPage: React.FC = () => {
                   return (
                     <tr
                       key={sub.id}
-                      className="hover:bg-slate-800/30 transition cursor-pointer"
+                      className="hover:bg-[#424242]/20 transition-colors cursor-pointer"
                       onClick={() => void openDetail(sub.id)}
                     >
-                      <td className="py-3.5 px-4">
-                        <div className="font-medium text-white">{sub.title}</div>
-                        <div className="text-[11px] text-slate-500">Rev #{sub.revision_number}</div>
+                      <td className="py-3 px-4">
+                        <div className="font-medium text-[#ECECEC]">{sub.title}</div>
+                        <div className="text-[10px] text-[#71717A] font-mono">Rev #{sub.revision_number}</div>
                       </td>
-                      <td className="py-3.5 px-4 text-slate-300">{kitName}</td>
-                      <td className="py-3.5 px-4 text-slate-300">
-                        <span className="font-medium text-slate-200">
+                      <td className="py-3 px-4 text-[#A1A1AA]">{kitName}</td>
+                      <td className="py-3 px-4 text-[#A1A1AA]">
+                        <span className="font-medium text-[#ECECEC]">
                           {sub.submitted_by_name || '—'}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         {sub.score !== null ? (
                           <div className="flex items-center gap-1.5">
                             <span
                               className={`font-semibold ${
-                                isPass ? 'text-emerald-400' : 'text-rose-400'
+                                isPass ? 'text-[#10A37F]' : 'text-[#EF4444]'
                               }`}
                             >
                               {sub.score}/100
@@ -410,49 +419,49 @@ export const ApprovalsPage: React.FC = () => {
                             <span
                               className={`rounded px-1.5 py-0.2 text-[10px] font-medium border ${
                                 isPass
-                                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-                                  : 'bg-rose-500/10 text-rose-300 border-rose-500/30'
+                                  ? 'bg-[#10A37F]/15 text-[#10A37F] border-[#10A37F]/30'
+                                  : 'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30'
                               }`}
                             >
                               {sub.result}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-slate-500">—</span>
+                          <span className="text-[#71717A]">—</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         <span
-                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${statusInfo.badge}`}
+                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${statusInfo.badge}`}
                         >
                           {statusInfo.label}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-slate-400">
+                      <td className="py-3 px-4 text-[#A1A1AA]">
                         {sub.assigned_reviewer_name ? (
                           <div className="flex items-center gap-1">
-                            <UserCheck className="h-3.5 w-3.5 text-indigo-400" />
+                            <UserCheck className="h-3.5 w-3.5 text-[#10A37F]" />
                             <span>{sub.assigned_reviewer_name}</span>
                           </div>
                         ) : sub.reviewed_by_name ? (
                           <span>{sub.reviewed_by_name}</span>
                         ) : (
-                          <span className="text-slate-500 text-[11px]">Unassigned</span>
+                          <span className="text-[#71717A] text-[10px]">Unassigned</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-400 text-[11px]">
+                      <td className="py-3 px-4 text-[#71717A] text-[11px]">
                         {new Date(sub.created_at).toLocaleDateString()}
                       </td>
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3 px-4 text-right">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             void openDetail(sub.id);
                           }}
-                          className="inline-flex items-center gap-1 rounded-lg bg-indigo-600/10 border border-indigo-500/30 px-3 py-1 text-xs font-medium text-indigo-300 hover:bg-indigo-600/20 transition"
+                          className="inline-flex items-center gap-1 rounded-md bg-[#212121] border border-[#424242] px-2.5 py-1 text-xs font-medium text-[#ECECEC] hover:bg-[#424242] transition"
                         >
-                          <Eye className="h-3.5 w-3.5" />
+                          <Eye className="h-3.5 w-3.5 text-[#10A37F]" />
                           <span>Inspect</span>
                         </button>
                       </td>
@@ -467,19 +476,19 @@ export const ApprovalsPage: React.FC = () => {
 
       {/* Review Modal / Drawer */}
       {selectedSubId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative w-full max-w-4xl rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl my-8 overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 overflow-y-auto">
+          <div className="relative w-full max-w-4xl rounded-xl border border-[#424242] bg-[#2F2F2F] shadow-xl my-8 overflow-hidden flex flex-col max-h-[90vh]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4 bg-slate-950/70">
+            <div className="flex items-center justify-between border-b border-[#424242] px-6 py-4 bg-[#212121]">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2F2F2F] border border-[#424242] text-[#10A37F]">
                   <FileText className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">
+                  <h3 className="text-base font-semibold text-[#ECECEC]">
                     {detail?.title || 'Loading submission...'}
                   </h3>
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <div className="flex items-center gap-2 text-xs text-[#A1A1AA]">
                     <span>Revision #{detail?.revision_number ?? 1}</span>
                     <span>•</span>
                     <span>{detail ? kitMap.get(detail.brand_kit_id) || 'Brand Kit' : ''}</span>
@@ -498,16 +507,16 @@ export const ApprovalsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={closeDetail}
-                className="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="rounded-lg p-1 text-[#A1A1AA] hover:text-[#ECECEC] hover:bg-[#424242] transition"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-[#2F2F2F]">
               {actionSuccessNotice && (
-                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-300 flex items-center gap-2">
+                <div className="rounded-lg border border-[#10A37F]/30 bg-[#10A37F]/10 p-3 text-xs text-[#10A37F] flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 shrink-0" />
                   <span>{actionSuccessNotice}</span>
                 </div>
@@ -515,26 +524,26 @@ export const ApprovalsPage: React.FC = () => {
 
               {detailLoading ? (
                 <div className="py-12 space-y-4">
-                  <div className="h-8 w-1/3 animate-pulse rounded bg-slate-800" />
-                  <div className="h-24 w-full animate-pulse rounded bg-slate-800" />
+                  <div className="h-8 w-1/3 animate-pulse rounded bg-[#212121]" />
+                  <div className="h-24 w-full animate-pulse rounded bg-[#212121]" />
                 </div>
               ) : detailError ? (
-                <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-xs text-rose-300">
+                <div className="p-4 rounded-lg border border-[#EF4444]/30 bg-[#EF4444]/10 text-xs text-[#EF4444]">
                   {detailError}
                 </div>
               ) : detail ? (
                 <>
                   {/* Score & Telemetry Banner */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-                      <div className="text-xs text-slate-400">Deterministic Score</div>
-                      <div className="mt-1 text-2xl font-bold text-white flex items-center gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="rounded-lg border border-[#424242] bg-[#212121] p-3.5">
+                      <div className="text-xs text-[#A1A1AA]">Deterministic Score</div>
+                      <div className="mt-1 text-2xl font-bold text-[#ECECEC] flex items-center gap-2">
                         <span>{detail.analysis?.score ?? '—'}/100</span>
                         <span
-                          className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
+                          className={`rounded px-1.5 py-0.2 text-xs font-semibold ${
                             detail.analysis?.result === 'PASS'
-                              ? 'bg-emerald-500/20 text-emerald-300'
-                              : 'bg-rose-500/20 text-rose-300'
+                              ? 'bg-[#10A37F]/15 text-[#10A37F]'
+                              : 'bg-[#EF4444]/15 text-[#EF4444]'
                           }`}
                         >
                           {detail.analysis?.result}
@@ -542,16 +551,16 @@ export const ApprovalsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-                      <div className="text-xs text-slate-400">Rules Evaluated</div>
-                      <div className="mt-1 text-2xl font-bold text-white">
+                    <div className="rounded-lg border border-[#424242] bg-[#212121] p-3.5">
+                      <div className="text-xs text-[#A1A1AA]">Rules Evaluated</div>
+                      <div className="mt-1 text-2xl font-bold text-[#ECECEC]">
                         {detail.analysis?.rules_evaluated ?? 0}
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-                      <div className="text-xs text-slate-400">Findings & Violations</div>
-                      <div className="mt-1 text-2xl font-bold text-white">
+                    <div className="rounded-lg border border-[#424242] bg-[#212121] p-3.5">
+                      <div className="text-xs text-[#A1A1AA]">Findings & Violations</div>
+                      <div className="mt-1 text-2xl font-bold text-[#ECECEC]">
                         {detail.analysis?.findings.length ?? 0}
                       </div>
                     </div>
@@ -559,11 +568,11 @@ export const ApprovalsPage: React.FC = () => {
 
                   {/* Execution Mode & Fallback Notice */}
                   {detail.analysis?.scoring?.engine_mode === 'DETERMINISTIC_FALLBACK' && (
-                    <div className="rounded-xl border border-amber-500/40 bg-amber-950/20 p-3 text-xs text-amber-200 flex items-start gap-2.5">
-                      <ShieldAlert className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="rounded-lg border border-[#F59E0B]/30 bg-[#212121] p-3 text-xs text-[#F59E0B] flex items-start gap-2.5">
+                      <ShieldAlert className="h-4 w-4 text-[#F59E0B] shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold">Deterministic Fallback: </span>
-                        <span>
+                        <span className="font-semibold">Deterministic Fallback: </span>
+                        <span className="text-[#ECECEC]">
                           {detail.analysis.scoring.ai_status_message ||
                             'AI provider unconfigured. Evaluated using authoritative deterministic rules only.'}
                         </span>
@@ -573,20 +582,20 @@ export const ApprovalsPage: React.FC = () => {
 
                   {/* Semantic Assessment Telemetry Pill */}
                   {detail.analysis?.scoring?.semantic_assessment && (
-                    <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-3 text-xs flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 text-indigo-300 font-semibold">
-                        <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+                    <div className="rounded-lg border border-[#424242] bg-[#212121] p-3 text-xs flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-[#10A37F] font-semibold">
+                        <Sparkles className="h-3.5 w-3.5 text-[#10A37F]" />
                         <span>AI Grounding Telemetry</span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-slate-300 text-[11px] font-mono">
+                      <div className="flex flex-wrap items-center gap-3 text-[#ECECEC] text-[11px] font-mono">
                         <span>{detail.analysis.scoring.semantic_assessment.claims_extracted} Claims</span>
-                        <span className="text-emerald-400">
+                        <span className="text-[#10A37F]">
                           {detail.analysis.scoring.semantic_assessment.claims_verified} Verified
                         </span>
-                        <span className="text-rose-400">
+                        <span className="text-[#EF4444]">
                           {detail.analysis.scoring.semantic_assessment.claims_contradicted} Contradicted
                         </span>
-                        <span className="text-amber-400">
+                        <span className="text-[#F59E0B]">
                           {detail.analysis.scoring.semantic_assessment.claims_unverified} Unverified
                         </span>
                       </div>
@@ -594,40 +603,40 @@ export const ApprovalsPage: React.FC = () => {
                   )}
 
                   {/* Submitted Content Display */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <div className="space-y-1.5">
+                    <h4 className="text-xs font-semibold text-[#A1A1AA] uppercase tracking-wider">
                       Submitted Copy
                     </h4>
-                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-xs font-mono text-slate-200 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                    <div className="rounded-lg border border-[#424242] bg-[#212121] p-4 text-xs font-mono text-[#ECECEC] whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
                       {detail.content_text}
                     </div>
                   </div>
 
                   {/* Compliance Findings & Evidence */}
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                      <ShieldAlert className="h-4 w-4 text-amber-400" />
+                  <div className="space-y-2.5">
+                    <h4 className="text-xs font-semibold text-[#A1A1AA] uppercase tracking-wider flex items-center gap-2">
+                      <ShieldAlert className="h-4 w-4 text-[#F59E0B]" />
                       <span>Violations & Evidence Citations ({detail.analysis?.findings.length ?? 0})</span>
                     </h4>
 
                     {(!detail.analysis?.findings || detail.analysis.findings.length === 0) ? (
-                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-xs text-emerald-300 flex items-center gap-2">
+                      <div className="rounded-lg border border-[#10A37F]/30 bg-[#10A37F]/10 p-3.5 text-xs text-[#10A37F] flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4" />
                         <span>Zero rule violations detected. All brand rules passed.</span>
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-2.5">
                         {detail.analysis.findings.map((finding) => (
                           <div
                             key={finding.finding_id}
-                            className="rounded-xl border border-slate-800 bg-slate-950/70 p-4 space-y-2.5"
+                            className="rounded-lg border border-[#424242] bg-[#212121] p-3.5 space-y-2"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className="font-semibold text-slate-100 text-xs">
+                              <span className="font-semibold text-[#ECECEC] text-xs">
                                 {finding.rule_title || finding.title || 'Rule Violation'} ({finding.rule_code})
                               </span>
                               <span
-                                className={`rounded px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                                className={`rounded px-1.5 py-0.2 text-[10px] font-semibold uppercase ${
                                   SEV_BADGE[finding.severity] || SEV_BADGE.MEDIUM
                                 }`}
                               >
@@ -635,12 +644,12 @@ export const ApprovalsPage: React.FC = () => {
                               </span>
                             </div>
 
-                            <p className="text-xs text-slate-300">{finding.explanation}</p>
+                            <p className="text-xs text-[#A1A1AA]">{finding.explanation}</p>
 
                             {/* Unverified Guard Explicit Callout */}
                             {(finding.kind === 'UNVERIFIED_CLAIM' || finding.status === 'UNVERIFIED') && (
-                              <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-2 text-[11px] text-amber-300 flex items-start gap-2">
-                                <ShieldAlert className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
+                              <div className="rounded border border-[#F59E0B]/30 bg-[#F59E0B]/10 p-2 text-[11px] text-[#F59E0B] flex items-start gap-2">
+                                <ShieldAlert className="h-3.5 w-3.5 text-[#F59E0B] shrink-0 mt-0.5" />
                                 <span>
                                   <strong>Unverified Guard:</strong> Claim could not be verified against approved guideline documents.
                                 </span>
@@ -649,32 +658,32 @@ export const ApprovalsPage: React.FC = () => {
 
                             {/* Guideline Chunk Evidence Citation */}
                             {finding.citation && (
-                              <div className="rounded-lg border border-indigo-500/30 bg-indigo-950/30 p-2.5 text-[11px] text-slate-300 space-y-1">
-                                <div className="flex items-center justify-between font-semibold text-indigo-300">
+                              <div className="rounded border border-[#424242] bg-[#2F2F2F] p-2.5 text-[11px] text-[#ECECEC] space-y-1">
+                                <div className="flex items-center justify-between font-semibold text-[#10A37F]">
                                   <span className="flex items-center gap-1.5">
-                                    <BookOpen className="h-3.5 w-3.5 text-indigo-400" />
+                                    <BookOpen className="h-3.5 w-3.5 text-[#10A37F]" />
                                     <span>{finding.citation.document_title}</span>
                                   </span>
-                                  <span className="font-mono text-[10px] text-slate-400">
+                                  <span className="font-mono text-[10px] text-[#71717A]">
                                     Chunk: {finding.citation.chunk_id.slice(0, 8)}...
                                     {finding.citation.page_number ? ` · p.${finding.citation.page_number}` : ''}
                                   </span>
                                 </div>
-                                <blockquote className="italic text-slate-400 font-mono text-[10px] bg-slate-950/50 p-2 rounded border border-indigo-500/10">
+                                <blockquote className="italic text-[#A1A1AA] font-mono text-[10px] bg-[#212121] p-2 rounded border border-[#424242]">
                                   "{finding.citation.content || finding.evidence_excerpt}"
                                 </blockquote>
                               </div>
                             )}
 
                             {!finding.citation && finding.evidence_excerpt && (
-                              <div className="rounded-lg border border-slate-800/80 bg-slate-900/60 p-2.5 text-[11px] text-slate-400">
-                                <span className="text-indigo-400 font-semibold">Evidence: </span>
+                              <div className="rounded border border-[#424242] bg-[#2F2F2F] p-2 text-[11px] text-[#A1A1AA]">
+                                <span className="text-[#10A37F] font-semibold">Evidence: </span>
                                 <span className="font-mono">"{finding.evidence_excerpt}"</span>
                               </div>
                             )}
 
                             {finding.recommended_correction && (
-                              <div className="text-[11px] text-emerald-400">
+                              <div className="text-[11px] text-[#10A37F]">
                                 <span className="font-semibold">Recommended Correction: </span>
                                 <span>{finding.recommended_correction}</span>
                               </div>
@@ -686,32 +695,32 @@ export const ApprovalsPage: React.FC = () => {
                   </div>
 
                   {/* Review Audit History */}
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                      <Clock4 className="h-4 w-4 text-indigo-400" />
+                  <div className="space-y-2.5">
+                    <h4 className="text-xs font-semibold text-[#A1A1AA] uppercase tracking-wider flex items-center gap-2">
+                      <Clock4 className="h-4 w-4 text-[#10A37F]" />
                       <span>Review Action Log</span>
                     </h4>
                     {detail.review_history.length === 0 ? (
-                      <p className="text-xs text-slate-500">No review actions recorded yet.</p>
+                      <p className="text-xs text-[#71717A]">No review actions recorded yet.</p>
                     ) : (
                       <div className="space-y-2">
                         {detail.review_history.map((action) => (
                           <div
                             key={action.id}
-                            className="rounded-lg border border-slate-800 bg-slate-950/40 p-3 text-xs flex items-start justify-between gap-4"
+                            className="rounded-lg border border-[#424242] bg-[#212121] p-3 text-xs flex items-start justify-between gap-4"
                           >
                             <div>
-                              <div className="font-semibold text-white">
+                              <div className="font-semibold text-[#ECECEC]">
                                 {action.action.replace(/_/g, ' ')}
-                                <span className="text-slate-400 font-normal ml-2">
+                                <span className="text-[#A1A1AA] font-normal ml-2">
                                   by {action.actor_name || 'System / Reviewer'}
                                 </span>
                               </div>
                               {action.comments && (
-                                <p className="mt-1 text-slate-300">{action.comments}</p>
+                                <p className="mt-1 text-[#A1A1AA]">{action.comments}</p>
                               )}
                             </div>
-                            <span className="text-[10px] text-slate-500 shrink-0">
+                            <span className="text-[10px] text-[#71717A] shrink-0 font-mono">
                               {new Date(action.created_at).toLocaleString()}
                             </span>
                           </div>
@@ -722,7 +731,7 @@ export const ApprovalsPage: React.FC = () => {
 
                   {/* Add Reviewer Comment Form */}
                   <form onSubmit={handleAddComment} className="pt-2">
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">
                       Add Reviewer Note / Comment
                     </label>
                     <div className="flex gap-2">
@@ -731,12 +740,12 @@ export const ApprovalsPage: React.FC = () => {
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         placeholder="Leave feedback or guidance for the content creator..."
-                        className="flex-1 rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                        className="flex-1 rounded-lg bg-[#212121] border border-[#424242] px-3 py-1.5 text-xs text-[#ECECEC] placeholder-[#71717A] focus:outline-none focus:border-[#10A37F]"
                       />
                       <button
                         type="submit"
                         disabled={commentBusy || !newComment.trim()}
-                        className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition"
+                        className="rounded-lg bg-[#10A37F] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#0D8F70] disabled:opacity-50 transition-colors"
                       >
                         {commentBusy ? 'Posting...' : 'Post Note'}
                       </button>
@@ -747,19 +756,19 @@ export const ApprovalsPage: React.FC = () => {
             </div>
 
             {/* Modal Footer / Review Actions */}
-            <div className="border-t border-slate-800 bg-slate-950/80 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="text-xs text-slate-400">
+            <div className="border-t border-[#424242] bg-[#212121] px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-xs text-[#A1A1AA]">
                 {detail?.submitted_by_user_id === user?.id ? (
-                  <span className="text-amber-400 font-medium flex items-center gap-1.5">
+                  <span className="text-[#F59E0B] font-medium flex items-center gap-1.5">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
                     Independent review required: You submitted this copy.
                   </span>
                 ) : canDecide ? (
-                  <span className="text-emerald-400 font-medium">
+                  <span className="text-[#10A37F] font-medium">
                     ✓ Authorised to approve or reject
                   </span>
                 ) : (
-                  <span className="text-slate-500">
+                  <span className="text-[#71717A]">
                     Read-only reviewer mode (requires approval:decide for final action)
                   </span>
                 )}
@@ -771,7 +780,7 @@ export const ApprovalsPage: React.FC = () => {
                     type="button"
                     onClick={() => setConfirmAction('REQUEST_CHANGES')}
                     disabled={actionBusy || detail?.submitted_by_user_id === user?.id}
-                    className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-xs font-semibold text-orange-300 hover:bg-orange-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-lg border border-[#F59E0B]/40 bg-[#F59E0B]/10 px-3.5 py-1.5 text-xs font-semibold text-[#F59E0B] hover:bg-[#F59E0B]/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Request Changes
                   </button>
@@ -779,7 +788,7 @@ export const ApprovalsPage: React.FC = () => {
                     type="button"
                     onClick={() => setConfirmAction('REJECT')}
                     disabled={actionBusy || detail?.submitted_by_user_id === user?.id}
-                    className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-lg border border-[#EF4444]/40 bg-[#EF4444]/10 px-3.5 py-1.5 text-xs font-semibold text-[#EF4444] hover:bg-[#EF4444]/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Reject
                   </button>
@@ -787,7 +796,7 @@ export const ApprovalsPage: React.FC = () => {
                     type="button"
                     onClick={() => setConfirmAction('APPROVE')}
                     disabled={actionBusy || detail?.submitted_by_user_id === user?.id}
-                    className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-lg bg-[#10A37F] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#0D8F70] transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Approve Copy
                   </button>
@@ -797,12 +806,12 @@ export const ApprovalsPage: React.FC = () => {
 
             {/* Confirmation Sub-Modal */}
             {confirmAction && (
-              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 space-y-4">
-                  <h4 className="text-base font-bold text-white">
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+                <div className="w-full max-w-md rounded-xl border border-[#424242] bg-[#2F2F2F] p-5 space-y-3.5 shadow-2xl">
+                  <h4 className="text-sm font-semibold text-[#ECECEC]">
                     Confirm Decision: {confirmAction.replace('_', ' ')}
                   </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed">
                     {confirmAction === 'APPROVE'
                       ? 'Are you sure you want to approve this marketing submission? This decision is immutable and recorded in the audit log.'
                       : confirmAction === 'REJECT'
@@ -811,7 +820,7 @@ export const ApprovalsPage: React.FC = () => {
                   </p>
 
                   <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">
+                    <label className="block text-xs font-medium text-[#A1A1AA] mb-1">
                       Reason / Review Comments (Optional)
                     </label>
                     <textarea
@@ -819,16 +828,16 @@ export const ApprovalsPage: React.FC = () => {
                       onChange={(e) => setActionComments(e.target.value)}
                       rows={3}
                       placeholder="Add guidance or notes for this decision..."
-                      className="w-full rounded-xl bg-slate-950 border border-slate-800 p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                      className="w-full rounded-lg bg-[#212121] border border-[#424242] p-2.5 text-xs text-[#ECECEC] placeholder-[#71717A] focus:outline-none focus:border-[#10A37F]"
                     />
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-2">
+                  <div className="flex items-center justify-end gap-2 pt-1">
                     <button
                       type="button"
                       onClick={() => setConfirmAction(null)}
                       disabled={actionBusy}
-                      className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-700 transition"
+                      className="rounded-lg border border-[#424242] bg-[#212121] px-3.5 py-1.5 text-xs font-medium text-[#A1A1AA] hover:bg-[#424242] hover:text-[#ECECEC] transition-colors"
                     >
                       Cancel
                     </button>
@@ -836,12 +845,12 @@ export const ApprovalsPage: React.FC = () => {
                       type="button"
                       onClick={() => void executeDecision()}
                       disabled={actionBusy}
-                      className={`rounded-xl px-4 py-2 text-xs font-semibold text-white transition ${
+                      className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white transition-colors ${
                         confirmAction === 'APPROVE'
-                          ? 'bg-emerald-600 hover:bg-emerald-500'
+                          ? 'bg-[#10A37F] hover:bg-[#0D8F70]'
                           : confirmAction === 'REJECT'
-                          ? 'bg-rose-600 hover:bg-rose-500'
-                          : 'bg-orange-600 hover:bg-orange-500'
+                          ? 'bg-[#EF4444] hover:bg-[#DC2626]'
+                          : 'bg-[#F59E0B] hover:bg-[#D97706]'
                       }`}
                     >
                       {actionBusy ? 'Processing...' : `Confirm ${confirmAction.replace('_', ' ')}`}

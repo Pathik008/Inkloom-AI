@@ -148,6 +148,10 @@ class ComplianceReviewWorkflow:
         # Node 2: Deterministic Engine
         state = await self._node_deterministic_engine(state)
 
+        # Resolve LLM provider if hybrid mode is active and provider not explicitly passed
+        if state.mode == "hybrid" and state.llm_provider is None:
+            state.llm_provider = get_llm_provider()
+
         # Conditional Routing: If AI unavailable or deterministic mode requested, bypass AI stages
         if not state.ai_available or state.mode == "deterministic" or state.llm_provider is None:
             state.engine_mode = "DETERMINISTIC_FALLBACK" if state.mode == "hybrid" else "DETERMINISTIC"
@@ -371,6 +375,8 @@ class ComplianceReviewWorkflow:
         active_llm = state.llm_provider or get_llm_provider()
         if active_llm is None or state.mode == "deterministic":
             return self.execute_deterministic_fallback(state)
+
+        state.llm_provider = active_llm
 
         try:
             loop = asyncio.get_running_loop()
