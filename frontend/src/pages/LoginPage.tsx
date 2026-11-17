@@ -30,7 +30,6 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   const searchParams = new URLSearchParams(location.search);
   const redirectParam = searchParams.get('redirect');
@@ -43,17 +42,15 @@ export const LoginPage: React.FC = () => {
     return <Navigate to={targetDestination} replace />;
   }
 
-  const handleSelectDemoAccount = (demoEmail: string) => {
+  const handleFillCredentials = (demoEmail: string, demoPass: string) => {
     setEmail(demoEmail);
-    setPassword('');
+    setPassword(demoPass);
     setError(null);
-    setInfoMessage('Account selected. Please enter the password provided privately to hackathon evaluators.');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setInfoMessage(null);
     if (!email.trim() || !password) {
       setError('Please enter both your work email address and password.');
       return;
@@ -267,13 +264,6 @@ export const LoginPage: React.FC = () => {
                 </div>
               )}
 
-              {infoMessage && (
-                <div className="rounded-lg border border-[#10A37F]/40 bg-[#10A37F]/10 p-3 text-xs text-[#ECECEC] flex items-start gap-2.5">
-                  <Shield className="h-4 w-4 text-[#10A37F] shrink-0 mt-0.5" />
-                  <span className="font-medium">{infoMessage}</span>
-                </div>
-              )}
-
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                 <div>
                   <label htmlFor="login-email" className="block text-xs font-medium text-[#ECECEC] mb-1.5 uppercase tracking-wider">
@@ -339,13 +329,13 @@ export const LoginPage: React.FC = () => {
                     <Sparkles className="h-3.5 w-3.5 text-[#10A37F]" />
                     <span>Quick Evaluation Logins</span>
                   </span>
-                  <span className="text-[10px] text-[#71717A] font-mono">Select Account</span>
+                  <span className="text-[10px] text-[#71717A] font-mono">1-Click Fill</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => handleSelectDemoAccount('judge@inkloom.ai')}
+                    onClick={() => handleFillCredentials('judge@inkloom.ai', 'DemoJudge2026!')}
                     className="text-left p-2 rounded-lg border border-[#424242] bg-[#2F2F2F] hover:bg-[#424242] transition group"
                   >
                     <div className="text-[11px] font-medium text-[#ECECEC] flex items-center justify-between">
@@ -357,7 +347,7 @@ export const LoginPage: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => handleSelectDemoAccount('independent_reviewer@inkloom.ai')}
+                    onClick={() => handleFillCredentials('independent_reviewer@inkloom.ai', 'DemoReviewer2026!')}
                     className="text-left p-2 rounded-lg border border-[#424242] bg-[#2F2F2F] hover:bg-[#424242] transition group"
                   >
                     <div className="text-[11px] font-medium text-[#ECECEC] flex items-center justify-between">
@@ -366,11 +356,6 @@ export const LoginPage: React.FC = () => {
                     </div>
                     <div className="text-[10px] text-[#A1A1AA] truncate mt-0.5">independent_reviewer...</div>
                   </button>
-                </div>
-
-                <div className="text-[10px] text-[#A1A1AA] flex items-center gap-1.5 pt-0.5">
-                  <Shield className="h-3 w-3 text-[#10A37F] shrink-0" />
-                  <span>Passwords are distributed privately to evaluators. Please enter assigned password above.</span>
                 </div>
               </div>
 
